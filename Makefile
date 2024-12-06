@@ -1,8 +1,14 @@
-dev:
-	python manage.py runserver 127.0.0.1:8030
+bend:
+	cd server && python manage.py runserver 127.0.0.1:8030
+
+fend:
+	cd client && npm run dev
 
 migrate:
-	python manage.py makemigrations main && python manage.py migrate
+	cd server && python manage.py makemigrations main && python manage.py migrate
 
 css:
-	npx tailwindcss -i ./main/static/main/input.css -o ./main/static/main/style.css --watch
+	cd client && npx tailwindcss -i ./main/static/main/input.css -o ./main/static/main/style.css --watch
+
+deploy:
+	./deploy.sh
