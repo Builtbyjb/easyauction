@@ -1,113 +1,116 @@
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError
-from django.http import HttpResponseRedirect
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
 from django.shortcuts import render
-from django.urls import reverse
 from datetime import datetime
 
 from .models import User, Listing, Watchlist, Bid, Comment
 
 
+@api_view(['GET'])
 def index(request):
-    return render(request, "main/index.html",{
-        "listings": Listing.objects.filter(is_active=True)
-    })
+    return render(request, "main/index.html")
 
 
+@api_view(['POST'])
 def login_view(request):
-    if request.method == "POST":
+    # Attempt to sign user in
+    username = request.POST["username"]
+    password = request.POST["password"]
+    user = authenticate(request, username=username, password=password)
 
-        # Attempt to sign user in
-        username = request.POST["username"]
-        password = request.POST["password"]
-        user = authenticate(request, username=username, password=password)
-
-        # Check if authentication successful
-        if user is not None:
-            login(request, user)
-            return HttpResponseRedirect(reverse("index"))
-        else:
-            return render(request, "main/login.html", {
-                "message": "Invalid username and/or password."
-            })
-    else:
-        return render(request, "main/login.html")
-
-
-def logout_view(request):
-    logout(request)
-    return HttpResponseRedirect(reverse("index"))
-
-
-def register(request):
-    if request.method == "POST":
-        username = request.POST["username"]
-        email = request.POST["email"]
-
-        # Ensure password matches confirmation
-        password = request.POST["password"]
-        confirmation = request.POST["confirmation"]
-        if password != confirmation:
-            return render(request, "main/register.html", {
-                "message": "Passwords must match."
-            })
-
-        # Attempt to create new user
-        try:
-            user = User.objects.create_user(username, email, password)
-            user.save()
-        except IntegrityError:
-            return render(request, "main/register.html", {
-                "message": "Username already taken."
-            })
+    # Check if authentication successful
+    if user is not None:
         login(request, user)
-        return HttpResponseRedirect(reverse("index"))
+        return Response(
+            {"success": "Login successful"}, 
+            status=status.HTTP_200_OK
+        )
     else:
-        return render(request, "main/register.html")
+        return Response(
+            {"error": "Invalid username and/or password"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
+
+# def logout_view(request):
+#     logout(request)
+#     return HttpResponseRedirect(reverse("index"))
+
+
+@api_view(['POST'])
+def register(request):
+    username = request.POST["username"]
+    email = request.POST["email"]
+
+    # Ensure password matches confirmation
+    password = request.POST["password"]
+    confirmation = request.POST["confirmation"]
+    if password != confirmation:
+        return Response(
+            {"error": "Passwords must match"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Attempt to create new user
+    try:
+        user = User.objects.create_user(username, email, password)
+        user.save()
+    except IntegrityError:
+        return Response(
+            {"error": "Username already taken"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    login(request, user)
+
+    return Response(
+        {"success": "Registerd"},
+        status=status.HTTP_201_CREATED
+    )
+
+
+@api_view(['POST'])
 def create_listings(request):
-    if request.method == "POST":
-        title = request.POST.get("title")
-        description = request.POST.get("description")
-        bid = request.POST.get("bid")
-        image = request.POST.get("image")
-        category = request.POST.get("category")
-        time = datetime.now()
+    title = request.POST.get("title")
+    description = request.POST.get("description")
+    bid = request.POST.get("bid")
+    image = request.POST.get("image")
+    category = request.POST.get("category")
+    time = datetime.now()
 
-        # Adds user input to the listings table
-        Listing(title=title, 
-                 description=description, 
-                 bid=bid,
-                 image=image, 
-                 category=category,
-                 time=time.strftime("%B %d, %Y %I:%M %p"),
-                 user_id=request.user.id,
-                 ).save()
+    # Adds user input to the listings table
+    Listing(title=title, 
+             description=description, 
+             bid=bid,
+             image=image, 
+             category=category,
+             time=time.strftime("%B %d, %Y %I:%M %p"),
+             user_id=request.user.id,
+             ).save()
 
-        return render(request, "main/create_listings.html",{
-            "message": "Listing added successfully",
-        })
-    else:
-        return render(request, "main/create_listings.html")
+    return Response(
+        {"success": "Listing added successfully"},
+        status=status.HTTP_201_CREATED
+    )
 
 
-def categories(request):
-    if request.method == "POST":
-        category = request.POST.get("category", False)
-
-        return HttpResponseRedirect(reverse("category", args={str(category)}))
-
-    return render(request, "main/categories.html")
-
+@api_view(['GET'])
 def category(request, category_type):
     category = Listing.objects.filter(category=category_type)
 
-    return render(request, "main/category.html", {
-        "category": category,
-        "category_type": category_type,
-    })
+    return Response(
+        {
+            "category": category,
+            "category_type": category_type,
+        },
+        status=status.HTTP_200_OK
+    )
 
 
+@api_view(['GET','POST'])
 def watchlists(request):
     if request.method == "POST":
         add_id = request.POST.get('add to watchlist', False) # Gets listing to add
@@ -130,16 +133,27 @@ def watchlists(request):
             Watchlist.objects.get(listing_id=remove_id).delete()
 
             # Refresh the listing page by redirecting to the listings url, with listing id as an argument
-            return HttpResponseRedirect(reverse("listing", args=[remove_id]))
+            return Response(
+                {"success": "Listing removed from watchlist"},
+                status=status.HTTP_200_OK
+            )
 
-        return HttpResponseRedirect(reverse("listing", args=[add_id]))
+        return Response(
+            {'success':'Listing added to watchlist'},
+            status=status.HTTP_200_OK
+        )
     else:
         watchlists = Watchlist.objects.filter(user_id = request.user.id)
-        return render(request, "main/watchlists.html",{
-            "watchlists": watchlists,
-            "number": len(watchlists),
-        })
+        return Response(
+            {
+                "watchlists": watchlists,
+                "number": len(watchlists),
+            },
+            status=status.HTTP_200_OK
+        )
 
+
+@api_view(['GET','POST'])
 def listing(request, listing_id):
     watchlist_id = [] # Stores listing ids
 
@@ -228,7 +242,10 @@ def listing(request, listing_id):
         if close_listing == "0":
             listing.is_active = False
             listing.save()
-            return HttpResponseRedirect(reverse("listing", args=(str(listing.id))))
+            return Response(
+                {'success': 'Listing closed'},
+                status=status.HTTP_200_OK
+            )
 
         # Stores Bids
         if bid is not False:
@@ -263,7 +280,25 @@ def listing(request, listing_id):
         else:
             bid_success = ""
         
-        return render(request, "main/listing.html", {
+        return Response(
+            {
+                "listing": listing,
+                "user_authenticated": user_authenticated,
+                "unique_listing": unique_listing,
+                "listing_owner": User.objects.get(id=listing.user_id),
+                "listing_creator": listing_creator,
+                "highest_bid": highest_bid,
+                "number_of_bids": len(bids_list),
+                "is_active": listing.is_active,
+                "auction_winner": auction_winner,
+                "comments": comments,
+                "bid_success": bid_success,
+            },
+            status=status.HTTP_200_OK
+        )
+
+    return render(
+        {
             "listing": listing,
             "user_authenticated": user_authenticated,
             "unique_listing": unique_listing,
@@ -274,19 +309,6 @@ def listing(request, listing_id):
             "is_active": listing.is_active,
             "auction_winner": auction_winner,
             "comments": comments,
-            "bid_success": bid_success,
-        })
-
-    return render(request,"main/listing.html", {
-        "listing": listing,
-        "user_authenticated": user_authenticated,
-        "unique_listing": unique_listing,
-        "listing_owner": User.objects.get(id=listing.user_id),
-        "listing_creator": listing_creator,
-        "highest_bid": highest_bid,
-        "number_of_bids": len(bids_list),
-        "is_active": listing.is_active,
-        "auction_winner": auction_winner,
-        "comments": comments,
-    })
+        }
+    )
     
