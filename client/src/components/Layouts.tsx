@@ -9,10 +9,8 @@ function Layout({ children }: Props) {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen min-w-screen bg-slate-600">
-        <div className="text-white max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {children}
-        </div>
+      <div className="min-h-screen min-w-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">{children}</div>
       </div>
     </>
   );

@@ -1,12 +1,20 @@
 import { useState, useEffect, useRef } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
+import { getJWTToken } from "@/lib/utils";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isCategoriesOpen, setIsServicesOpen] = useState(false);
   const categoriesRef = useRef<HTMLDivElement>(null);
+  const [isAuth, setIsAuth] = useState(false);
 
   useEffect(() => {
+    if (getJWTToken() === null) {
+      setIsAuth(false);
+    } else {
+      setIsAuth(true);
+    }
+
     function handleClickOutside(event: MouseEvent) {
       if (
         categoriesRef.current &&
@@ -30,8 +38,13 @@ const Navbar = () => {
     setIsServicesOpen(!isCategoriesOpen);
   };
 
+  const logOut = () => {
+    localStorage.removeItem("JWTToken");
+    window.location.assign("/login");
+  };
+
   return (
-    <nav className="bg-gray-900 text-white">
+    <nav className="bg-zinc-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
@@ -41,87 +54,111 @@ const Navbar = () => {
           </div>
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-4">
-              <a
-                href="#"
-                className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
-              >
-                Username
-              </a>
+              {isAuth ? (
+                <a
+                  id="username"
+                  href="#"
+                  className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
+                >
+                  Username
+                </a>
+              ) : (
+                <></>
+              )}
               <a
                 href="/"
                 className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
               >
                 Active Listings
               </a>
-              <a
-                href="/all_listings"
-                className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
-              >
-                All Listings
-              </a>
-              <a
-                href="/create_listing"
-                className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
-              >
-                Create Listing
-              </a>
-              <a
-                href="/watchlists"
-                className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
-              >
-                Watchlists
-              </a>
-              <div className="relative group" ref={categoriesRef}>
-                <button
-                  onClick={toggleCategories}
-                  className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700 inline-flex items-center"
-                >
-                  Categories
-                  {isCategoriesOpen ? (
-                    <ChevronDown className="ml-1 h-4 w-4 rotate-180" />
-                  ) : (
-                    <ChevronDown className="ml-1 h-4 w-4" />
-                  )}
-                </button>
-                {isCategoriesOpen && (
-                  <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5">
-                    <div
-                      className="py-1"
-                      role="menu"
-                      aria-orientation="vertical"
-                      aria-labelledby="options-menu"
+              {isAuth ? (
+                <>
+                  <a
+                    href="/all_listings"
+                    className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
+                  >
+                    All Listings
+                  </a>
+                  <a
+                    href="/create_listing"
+                    className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
+                  >
+                    Create Listing
+                  </a>
+                  <a
+                    href="/watchlists"
+                    className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
+                  >
+                    Watchlists
+                  </a>
+                  <div className="relative group" ref={categoriesRef}>
+                    <button
+                      onClick={toggleCategories}
+                      className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700 inline-flex items-center"
                     >
-                      <a
-                        href="/categories/fashion"
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
-                        onClick={() => setIsServicesOpen(false)}
-                      >
-                        Fashion
-                      </a>
-                      <a
-                        href="/categories/toys"
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
-                        onClick={() => setIsServicesOpen(false)}
-                      >
-                        Toys
-                      </a>
-                      <a
-                        href="/categories/electronics"
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
-                        onClick={() => setIsServicesOpen(false)}
-                      >
-                        Electronics
-                      </a>
-                    </div>
+                      Categories
+                      {isCategoriesOpen ? (
+                        <ChevronDown className="ml-1 h-4 w-4 rotate-180" />
+                      ) : (
+                        <ChevronDown className="ml-1 h-4 w-4" />
+                      )}
+                    </button>
+                    {isCategoriesOpen && (
+                      <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5">
+                        <div
+                          className="py-1"
+                          role="menu"
+                          aria-orientation="vertical"
+                          aria-labelledby="options-menu"
+                        >
+                          <a
+                            href="/categories/fashion"
+                            className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
+                            onClick={() => setIsServicesOpen(false)}
+                          >
+                            Fashion
+                          </a>
+                          <a
+                            href="/categories/toys"
+                            className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
+                            onClick={() => setIsServicesOpen(false)}
+                          >
+                            Toys
+                          </a>
+                          <a
+                            href="/categories/electronics"
+                            className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
+                            onClick={() => setIsServicesOpen(false)}
+                          >
+                            Electronics
+                          </a>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              <a
-                href="/logout"
-                className="block px-3 py-2 rounded-md text-base font-medium bg-red-500 hover:bg-red-700"
-              >
-                Logout
-              </a>
+                  <a
+                    className="block px-3 py-2 rounded-md text-base font-medium bg-red-500 hover:bg-red-700"
+                    onClick={logOut}
+                  >
+                    Logout
+                  </a>
+                </>
+              ) : (
+                <>
+                  <a
+                    href="/register"
+                    className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
+                  >
+                    Register
+                  </a>
+                  <a
+                    href="/login"
+                    className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
+                  >
+                    Login
+                  </a>
+                </>
+              )}
             </div>
           </div>
           <div className="md:hidden">
@@ -149,77 +186,96 @@ const Navbar = () => {
             >
               Active Listings
             </a>
-            <a
-              href="/all_listings"
-              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700"
-            >
-              All Listings
-            </a>
-            <a
-              href="/create_listing"
-              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700"
-            >
-              Create Listing
-            </a>
-            <a
-              href="/watchlists"
-              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700"
-            >
-              Watchlists
-            </a>
-            <div className="relative group" ref={categoriesRef}>
-              <button
-                onClick={toggleCategories}
-                className="w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700 inline-flex items-center justify-between"
-              >
-                Categories
-                {isCategoriesOpen ? (
-                  <ChevronDown className="ml-1 h-4 w-4 rotate-180" />
-                ) : (
-                  <ChevronDown className="ml-1 h-4 w-4" />
-                )}
-              </button>
-              {isCategoriesOpen && (
-                <div className="pl-4">
-                  <a
-                    href="/categories/fashion"
-                    className="block px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
-                    onClick={() => {
-                      setIsServicesOpen(false);
-                      setIsOpen(false);
-                    }}
+            {isAuth ? (
+              <>
+                <a
+                  href="/all_listings"
+                  className="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700"
+                >
+                  All Listings
+                </a>
+                <a
+                  href="/create_listing"
+                  className="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700"
+                >
+                  Create Listing
+                </a>
+                <a
+                  href="/watchlists"
+                  className="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700"
+                >
+                  Watchlists
+                </a>
+                <div className="relative group" ref={categoriesRef}>
+                  <button
+                    onClick={toggleCategories}
+                    className="w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700 inline-flex items-center justify-between"
                   >
-                    Fashion
-                  </a>
-                  <a
-                    href="/categories/toys"
-                    className="block px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
-                    onClick={() => {
-                      setIsServicesOpen(false);
-                      setIsOpen(false);
-                    }}
-                  >
-                    Toys
-                  </a>
-                  <a
-                    href="/categories/electronics"
-                    className="block px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
-                    onClick={() => {
-                      setIsServicesOpen(false);
-                      setIsOpen(false);
-                    }}
-                  >
-                    Electronics
-                  </a>
+                    Categories
+                    {isCategoriesOpen ? (
+                      <ChevronDown className="ml-1 h-4 w-4 rotate-180" />
+                    ) : (
+                      <ChevronDown className="ml-1 h-4 w-4" />
+                    )}
+                  </button>
+                  {isCategoriesOpen && (
+                    <div className="pl-4">
+                      <a
+                        href="/categories/fashion"
+                        className="block px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
+                        onClick={() => {
+                          setIsServicesOpen(false);
+                          setIsOpen(false);
+                        }}
+                      >
+                        Fashion
+                      </a>
+                      <a
+                        href="/categories/toys"
+                        className="block px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
+                        onClick={() => {
+                          setIsServicesOpen(false);
+                          setIsOpen(false);
+                        }}
+                      >
+                        Toys
+                      </a>
+                      <a
+                        href="/categories/electronics"
+                        className="block px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
+                        onClick={() => {
+                          setIsServicesOpen(false);
+                          setIsOpen(false);
+                        }}
+                      >
+                        Electronics
+                      </a>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            <a
-              href="/logout"
-              className="block px-3 py-2 rounded-md text-base font-medium bg-red-500 hover:bg-red-700"
-            >
-              Logout
-            </a>
+                <a
+                  className="block px-3 py-2 rounded-md text-base font-medium bg-red-500 hover:bg-red-700"
+                  onClick={logOut}
+                >
+                  Logout
+                </a>
+              </>
+            ) : (
+              <>
+                <a
+                  href="/register"
+                  className="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700"
+                >
+                  Register
+                </a>
+                <a
+                  href="/login"
+                  className="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700"
+                >
+                  Login
+                </a>
+              </>
+            )}
           </div>
         </div>
       )}

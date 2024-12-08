@@ -1,78 +1,122 @@
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate
 from django.db import IntegrityError
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import render
 from datetime import datetime
-
 from .models import User, Listing, Watchlist, Bid, Comment
+from .serializer import UserSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def index(request):
-    return render(request, "main/index.html")
+    return render(request, "index.html")
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def login_view(request):
-    # Attempt to sign user in
-    username = request.POST["username"]
-    password = request.POST["password"]
-    user = authenticate(request, username=username, password=password)
+    email = request.data["email"]
+    password = request.data["password"]
 
-    # Check if authentication successful
-    if user is not None:
-        login(request, user)
+    try:
+        user = User.objects.get(email=email)
+
+        # Check if authentication successful
+        if user.check_password(password):
+            refresh = RefreshToken.for_user(user)
+            return Response(
+                {
+                    "success": "Login successful",
+                    "access": str(refresh.access_token)
+                }, 
+                status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"error": f"Invalid password"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    except User.DoesNotExist:
         return Response(
-            {"success": "Login successful"}, 
-            status=status.HTTP_200_OK
-        )
-    else:
-        return Response(
-            {"error": "Invalid username and/or password"},
+            {"error": f"Invalid email"},
             status=status.HTTP_400_BAD_REQUEST
         )
 
 
-# def logout_view(request):
-#     logout(request)
-#     return HttpResponseRedirect(reverse("index"))
-
-
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def register(request):
-    username = request.POST["username"]
-    email = request.POST["email"]
+    username = request.data["username"]
+    email = request.data["email"]
+    password = request.data["password"]
+    confirmation = request.data["confirmPassword"]
 
     # Ensure password matches confirmation
-    password = request.POST["password"]
-    confirmation = request.POST["confirmation"]
     if password != confirmation:
         return Response(
             {"error": "Passwords must match"},
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    # Attempt to create new user
-    try:
-        user = User.objects.create_user(username, email, password)
-        user.save()
-    except IntegrityError:
+    data = {
+        "username": username,
+        "email": email,
+        "password": password,
+    }
+
+    serializer = UserSerializer(data=data)
+
+    if serializer.is_valid():
+        try:
+            user = User.objects.create_user(
+                username=serializer.validated_data['username'],
+                email=serializer.validated_data['email'],
+                password=serializer.validated_data['password'],
+            )
+        
+            refresh = RefreshToken.for_user(user)
+            user.save()
+            return Response(
+                {
+                    "success": "Registered",
+                    # 'refresh': str(refresh),
+                    'access': str(refresh.access_token),
+                },
+                status=status.HTTP_201_CREATED
+            )
+        except:
+            return Response(
+                {"error": "Username already taken"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    else:
+        error = ""
+        try:
+            serializer.errors['email']
+            error = "Email is already taken"
+        except KeyError:
+            pass
+
+        try:
+            serializer.errors['username']
+            error = "Username is already taken"
+        except KeyError:
+            pass
+
         return Response(
-            {"error": "Username already taken"},
+            {"error": error},
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    login(request, user)
-
-    return Response(
-        {"success": "Registerd"},
-        status=status.HTTP_201_CREATED
-    )
-
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def create_listings(request):
     title = request.POST.get("title")
     description = request.POST.get("description")
