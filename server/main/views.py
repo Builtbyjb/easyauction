@@ -117,7 +117,7 @@ def register(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def create_listings(request):
+def create_listing(request):
     title = request.POST.get("title")
     description = request.POST.get("description")
     bid = request.POST.get("bid")

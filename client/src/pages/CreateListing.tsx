@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
+import { ImagePlus, X } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -21,7 +22,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ImageUpload } from "@/components/ImageUpload";
+import { CATEGORIES, SERVER_URL } from "@/lib/constants";
+import { getJWTToken } from "@/lib/utils";
+
+const ACCEPTED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+];
 
 const formSchema = z.object({
   title: z.string().min(3, {
@@ -33,24 +42,22 @@ const formSchema = z.object({
   price: z.coerce.number().positive({
     message: "Price must be a positive number",
   }),
-  image: z.string().url({
-    message: "Please upload an image",
-  }),
+  image: z
+    .any()
+    .refine((file) => file.length !== 0, "Upload an image")
+    .refine(
+      (file) => ACCEPTED_IMAGE_TYPES.includes(file?.type),
+      "Only .jpg, .jpeg, .png and .webp formats are supported."
+    ),
   category: z.string({
     required_error: "Please select a category",
   }),
 });
 
-const categories = [
-  { value: "electronics", label: "Electronics" },
-  { value: "clothing", label: "Clothing" },
-  { value: "books", label: "Books" },
-  { value: "home", label: "Home & Garden" },
-  { value: "sports", label: "Sports & Outdoors" },
-];
-
 export default function CreateListingPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [responseMessage, setResponseMessage] = useState("");
+  const [imagePath, setImagePath] = useState("");
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -63,14 +70,73 @@ export default function CreateListingPage() {
     },
   });
 
+  const clearImageInput = () => {
+    const fileInput: HTMLInputElement = document.getElementById(
+      "imageUpload"
+    ) as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = "";
+    }
+  };
+
+  const clearAllFields = () => {
+    form.reset({
+      title: "",
+      description: "",
+      price: 0,
+      category: "",
+    });
+  };
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    console.log(values);
+
+    const formData = new FormData();
+    formData.append("title", values.title);
+    formData.append("description", values.description);
+    formData.append("price", values.price.toString());
+    if (values.image) {
+      formData.append("image", values.image, "file");
+    }
+    formData.append("category", values.category);
+
+    const JWTToken = getJWTToken();
+
+    try {
+      const data = await fetch(`${SERVER_URL}/create_listing`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${JWTToken}`,
+          "Content-Type": "multipart/form-data",
+        },
+        body: formData,
+      });
+
+      const response = await data.json();
+
+      if (response.success) {
+        clearAllFields();
+        clearImageInput();
+        setIsLoading(false);
+        setResponseMessage(response.success);
+      } else {
+        setIsLoading(false);
+        console.error(response);
+      }
+    } catch (error) {
+      clearAllFields();
+      clearImageInput();
+      setIsLoading(false);
+      console.error(error);
+    }
   }
 
   return (
-    <div className="container mx-auto py-10">
+    <>
       <h1 className="text-3xl font-bold mb-6">Create New Listing</h1>
+      <p className="text-sm text-red-500 dark:text-red-400">
+        {responseMessage}
+      </p>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <FormField
@@ -80,7 +146,11 @@ export default function CreateListingPage() {
               <FormItem>
                 <FormLabel>Title</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter listing title" {...field} />
+                  <Input
+                    data-clear
+                    placeholder="Enter listing title"
+                    {...field}
+                  />
                 </FormControl>
                 <FormDescription>
                   Provide a clear and concise title for your listing.
@@ -97,6 +167,7 @@ export default function CreateListingPage() {
                 <FormLabel>Description</FormLabel>
                 <FormControl>
                   <Textarea
+                    data-clear
                     placeholder="Describe your item in detail"
                     className="resize-none"
                     {...field}
@@ -117,6 +188,7 @@ export default function CreateListingPage() {
                 <FormLabel>Price</FormLabel>
                 <FormControl>
                   <Input
+                    data-clear
                     type="number"
                     step="0.01"
                     min="0"
@@ -138,11 +210,54 @@ export default function CreateListingPage() {
               <FormItem>
                 <FormLabel>Image</FormLabel>
                 <FormControl>
-                  <ImageUpload
-                    value={field.value}
-                    onChange={field.onChange}
-                    onRemove={() => field.onChange("")}
-                  />
+                  <div className="mb-4 flex items-center gap-4">
+                    {field.value && (
+                      <div className="relative w-[200px] h-[200px] rounded-md overflow-hidden">
+                        <div className="z-10 absolute top-2 right-2">
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              field.onChange("");
+                              clearImageInput();
+                            }}
+                            variant="destructive"
+                            size="icon"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <img
+                          className="object-cover w-full h-full"
+                          alt="Uploaded image"
+                          src={imagePath}
+                        />
+                      </div>
+                    )}
+                    {!field.value && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() =>
+                          document.getElementById("imageUpload")?.click()
+                        }
+                      >
+                        <ImagePlus className="h-4 w-4 mr-2" />
+                        Upload an Image
+                      </Button>
+                    )}
+                    <input
+                      id="imageUpload"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        const fileURL = URL.createObjectURL(file as Blob);
+                        setImagePath(fileURL);
+                        field.onChange(file);
+                      }}
+                      style={{ display: "none" }}
+                    />
+                  </div>
                 </FormControl>
                 <FormDescription>
                   Upload a clear image of your item.
@@ -167,7 +282,7 @@ export default function CreateListingPage() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {categories.map((category) => (
+                    {CATEGORIES.map((category) => (
                       <SelectItem key={category.value} value={category.value}>
                         {category.label}
                       </SelectItem>
@@ -186,6 +301,6 @@ export default function CreateListingPage() {
           </Button>
         </form>
       </Form>
-    </div>
+    </>
   );
 }

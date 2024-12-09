@@ -1,11 +1,15 @@
 import { Routes, Route } from "react-router";
 import Layout from "./components/Layouts";
+import ProtectedLayout from "./components/ProtectedLayout";
 import Index from "./pages/index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import CreateListing from "./pages/CreateListing";
 import AllListings from "./pages/AllListings";
 import NotFound from "./pages/NotFound";
+import Watchlists from "./pages/Watchlists";
+import Categories from "./pages/Categories";
+import { CATEGORIES } from "./lib/constants";
 
 function App() {
   return (
@@ -22,19 +26,40 @@ function App() {
         <Route
           path="/all_listings"
           element={
-            <Layout>
+            <ProtectedLayout>
               <AllListings />
-            </Layout>
+            </ProtectedLayout>
           }
         />
         <Route
           path="/create_listing"
           element={
-            <Layout>
+            <ProtectedLayout>
               <CreateListing />
-            </Layout>
+            </ProtectedLayout>
           }
         />
+        <Route
+          path="/watchlists"
+          element={
+            <ProtectedLayout>
+              <Watchlists />
+            </ProtectedLayout>
+          }
+        />
+        <Route>
+          {CATEGORIES.map((category) => (
+            <Route
+              key={category.id}
+              path={category.url}
+              element={
+                <ProtectedLayout>
+                  <Categories type={category.label} />
+                </ProtectedLayout>
+              }
+            />
+          ))}
+        </Route>
         <Route
           path="/login"
           element={

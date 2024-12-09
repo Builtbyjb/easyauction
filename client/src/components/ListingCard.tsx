@@ -6,16 +6,16 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+const AVATAR = "/placeholder.svg?height=32&width=32";
+
 interface ListingCardProps {
   image: string;
   price: number;
   title: string;
   description: string;
+  category: string;
   time: string;
-  creator: {
-    name: string;
-    avatar: string;
-  };
+  creator: string;
 }
 
 export function ListingCard({
@@ -23,6 +23,7 @@ export function ListingCard({
   price,
   title,
   description,
+  category,
   time,
   creator,
 }: ListingCardProps) {
@@ -38,6 +39,7 @@ export function ListingCard({
       </CardHeader>
       <CardContent className="p-4">
         <h3 className="text-lg font-semibold mb-2">{title}</h3>
+        <p className="text-sm font-semibold text-gray-600 mb-2">{category}</p>
         <p className="text-sm text-gray-600 mb-2">{description}</p>
         <div className="flex items-center text-sm text-gray-500">
           <span>{time}</span>
@@ -45,10 +47,10 @@ export function ListingCard({
       </CardContent>
       <CardFooter className="p-4 pt-0 flex items-center">
         <Avatar className="h-8 w-8 mr-2">
-          <AvatarImage src={creator.avatar} alt={creator.name} />
-          <AvatarFallback>{creator.name.charAt(0)}</AvatarFallback>
+          <AvatarImage src={AVATAR} alt={creator} />
+          <AvatarFallback>{creator[0]}</AvatarFallback>
         </Avatar>
-        <span className="text-sm">{creator.name}</span>
+        <span className="text-sm">{creator}</span>
       </CardFooter>
     </Card>
   );

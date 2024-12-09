@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { getJWTToken } from "@/lib/utils";
+import { CATEGORIES } from "@/lib/constants";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -57,7 +58,6 @@ const Navbar = () => {
               {isAuth ? (
                 <a
                   id="username"
-                  href="#"
                   className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
                 >
                   Username
@@ -104,34 +104,23 @@ const Navbar = () => {
                       )}
                     </button>
                     {isCategoriesOpen && (
-                      <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5">
+                      <div className="absolute z-20 left-0 mt-2 w-48 rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5">
                         <div
                           className="py-1"
                           role="menu"
                           aria-orientation="vertical"
                           aria-labelledby="options-menu"
                         >
-                          <a
-                            href="/categories/fashion"
-                            className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
-                            onClick={() => setIsServicesOpen(false)}
-                          >
-                            Fashion
-                          </a>
-                          <a
-                            href="/categories/toys"
-                            className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
-                            onClick={() => setIsServicesOpen(false)}
-                          >
-                            Toys
-                          </a>
-                          <a
-                            href="/categories/electronics"
-                            className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
-                            onClick={() => setIsServicesOpen(false)}
-                          >
-                            Electronics
-                          </a>
+                          {CATEGORIES.map((category) => (
+                            <a
+                              key={category.id}
+                              href={category.url}
+                              className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
+                              onClick={() => setIsServicesOpen(false)}
+                            >
+                              {category.label}
+                            </a>
+                          ))}
                         </div>
                       </div>
                     )}
