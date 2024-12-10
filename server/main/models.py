@@ -10,8 +10,8 @@ class User(AbstractUser):
 
 class Listing(models.Model):
     user_id = models.IntegerField()
-    title = models.CharField(max_length=120, null=True)
-    image = models.CharField(max_length=500, null=True)
+    title = models.CharField(max_length=12)
+    image = models.ImageField(upload_to="uploads/", null=True)
     description = models.CharField(max_length=1000, null=True)
     bid = models.CharField(max_length=10, null=True)
     category = models.CharField(max_length=20, null=True)

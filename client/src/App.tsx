@@ -1,11 +1,11 @@
 import { Routes, Route } from "react-router";
-import Layout from "./components/Layouts";
+import Layout from "./components/Layout";
 import ProtectedLayout from "./components/ProtectedLayout";
 import Index from "./pages/index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import CreateListing from "./pages/CreateListing";
-import AllListings from "./pages/AllListings";
+import YourListings from "./pages/YourListings";
 import NotFound from "./pages/NotFound";
 import Watchlists from "./pages/Watchlists";
 import Categories from "./pages/Categories";
@@ -24,10 +24,10 @@ function App() {
           }
         />
         <Route
-          path="/all_listings"
+          path="/your_listings"
           element={
             <ProtectedLayout>
-              <AllListings />
+              <YourListings />
             </ProtectedLayout>
           }
         />
@@ -53,9 +53,9 @@ function App() {
               key={category.id}
               path={category.url}
               element={
-                <ProtectedLayout>
+                <Layout>
                   <Categories type={category.label} />
-                </ProtectedLayout>
+                </Layout>
               }
             />
           ))}

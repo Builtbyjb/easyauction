@@ -1,37 +1,81 @@
 import { ReactNode, useEffect, useState } from "react";
+import { Navigate } from "react-router";
+import { jwtDecode } from "jwt-decode";
 import Navbar from "./Navbar";
-import { getJWTToken } from "@/lib/utils";
+import api from "@/lib/api";
+import { LoadingPage } from "./LoadingPage";
 
 interface Props {
   children: ReactNode;
 }
 
-function Layout({ children }: Props) {
-  const [isAuth, setIsAuth] = useState(false);
+function ProtectedLayout({ children }: Props) {
+  const [isAuth, setIsAuth] = useState<boolean | null>(null);
+
+  const refreshToken = async () => {
+    const refreshToken = localStorage.getItem("REFRESH_TOKEN");
+    try {
+      const response = await api.post("/api/token/refresh/", {
+        refresh: refreshToken,
+      });
+
+      console.log(response);
+
+      if (response.status === 200) {
+        localStorage.setItem("ACCESS_TOKEN", response.data.access);
+        setIsAuth(true);
+        console.log("re");
+      } else {
+        setIsAuth(false);
+      }
+    } catch (error) {
+      console.error(error);
+      setIsAuth(false);
+    }
+  };
 
   useEffect(() => {
-    if (getJWTToken() === null) {
-      setIsAuth(false);
-      window.location.assign("/login");
-    } else {
-      setIsAuth(true);
-    }
+    const auth = async () => {
+      const token = localStorage.getItem("ACCESS_TOKEN");
+      if (token) {
+        const decoded = jwtDecode(token);
+        const tokenExpiration = decoded.exp;
+        const now = Date.now() / 1000; //Gets date in secs instead of ms
+
+        if (tokenExpiration) {
+          if (tokenExpiration < now) {
+            await refreshToken();
+          } else {
+            setIsAuth(true);
+          }
+        }
+      } else {
+        setIsAuth(false);
+      }
+    };
+
+    auth().catch(() => setIsAuth(false));
   }, []);
+
+  // Displays while waiting for the route to be authenticated
+  if (isAuth === null) {
+    return <LoadingPage />;
+  }
 
   return (
     <>
       <Navbar />
       <div className="min-h-screen min-w-screen">
-        {isAuth ? (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {isAuth ? (
             <div className="container mx-auto px-4 py-8">{children}</div>
-          </div>
-        ) : (
-          <></>
-        )}
+          ) : (
+            <Navigate to="/login" />
+          )}
+        </div>
       </div>
     </>
   );
 }
 
-export default Layout;
+export default ProtectedLayout;

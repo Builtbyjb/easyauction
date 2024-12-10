@@ -2,7 +2,6 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { SERVER_URL } from "@/lib/constants";
 
 import { Button } from "@/components/ui/button";
 // import { Checkbox } from "@/components/ui/checkbox";
@@ -16,6 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import api from "@/lib/api";
 
 const formSchema = z
   .object({
@@ -56,25 +56,23 @@ export default function RegisterPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      const data = await fetch(`${SERVER_URL}/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(values),
-      });
+      const response = await api.post("/api/v0/register", values);
 
-      const response = await data.json();
+      // Clear out any previous tokens
+      localStorage.removeItem("ACCESS_TOKEN");
+      localStorage.removeItem("REFRESH_TOKEN");
 
-      if (response.access) {
-        localStorage.setItem("JWTToken", response.access);
+      if (response.status === 201) {
+        localStorage.setItem("ACCESS_TOKEN", response.data.access);
+        localStorage.setItem("REFRESH_TOKEN", response.data.refresh);
         window.location.assign("/");
       } else {
-        setErrorMessage(response.error);
+        setErrorMessage(response.data.error);
         setIsLoading(false);
         console.error(response);
       }
     } catch (error) {
+      setIsLoading(false);
       console.log(error);
     }
   }

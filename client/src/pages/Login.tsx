@@ -2,7 +2,6 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { SERVER_URL } from "@/lib/constants";
 
 import { Button } from "@/components/ui/button";
 // import { Checkbox } from "@/components/ui/checkbox";
@@ -16,6 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import api from "@/lib/api";
 
 const formSchema = z.object({
   email: z.string().email({
@@ -44,26 +44,20 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const data = await fetch(`${SERVER_URL}/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(values),
-      });
+      const response = await api.post("/api/v0/login", values);
 
-      const response = await data.json();
-
-      if (response.access) {
-        localStorage.setItem("JWTToken", response.access);
+      if (response.status === 200) {
+        localStorage.setItem("ACCESS_TOKEN", response.data.access);
+        localStorage.setItem("REFRESH_TOKEN", response.data.refresh);
         window.location.assign("/");
       } else {
-        setErrorMessage(response.error);
-        setIsLoading(false);
+        setErrorMessage(response.data.error);
         console.error(response);
       }
     } catch (error) {
       console.log(error);
+    } finally {
+      setIsLoading(false);
     }
   }
 

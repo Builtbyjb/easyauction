@@ -7,8 +7,12 @@ from rest_framework import status
 from django.shortcuts import render
 from datetime import datetime
 from .models import User, Listing, Watchlist, Bid, Comment
-from .serializer import UserSerializer
-from rest_framework_simplejwt.tokens import RefreshToken
+from .serializer import (
+    UserRegisterSerializer, 
+    UserLoginSerializer, 
+    ListingSerializer,
+)
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 
 @api_view(['GET'])
@@ -20,30 +24,39 @@ def index(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
-    email = request.data["email"]
-    password = request.data["password"]
 
-    try:
-        user = User.objects.get(email=email)
+    serializer = UserLoginSerializer(data=request.data)
+    if serializer.is_valid():
 
-        # Check if authentication successful
-        if user.check_password(password):
-            refresh = RefreshToken.for_user(user)
+        try:
+            user = User.objects.get(email=serializer.validated_data['email'])
+
+            # Check if authentication successful
+            if user.check_password(serializer.validated_data['password']):
+                access = AccessToken.for_user(user)
+                refresh = RefreshToken.for_user(user)
+                return Response(
+                    {
+                        "success": "Login successful",
+                        "refresh": str(refresh),
+                        "access": str(access)
+                    }, 
+                    status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {"error": f"Invalid password"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except User.DoesNotExist:
             return Response(
-                {
-                    "success": "Login successful",
-                    "access": str(refresh.access_token)
-                }, 
-                status=status.HTTP_200_OK
-            )
-        else:
-            return Response(
-                {"error": f"Invalid password"},
+                {"error": "Invalid email"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-    except User.DoesNotExist:
+    else:
+        print(serializer.errors)
         return Response(
-            {"error": f"Invalid email"},
+            {"error": "serializer error"},
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -51,41 +64,26 @@ def login_view(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register(request):
-    username = request.data["username"]
-    email = request.data["email"]
-    password = request.data["password"]
-    confirmation = request.data["confirmPassword"]
 
-    # Ensure password matches confirmation
-    if password != confirmation:
-        return Response(
-            {"error": "Passwords must match"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    data = {
-        "username": username,
-        "email": email,
-        "password": password,
-    }
-
-    serializer = UserSerializer(data=data)
+    serializer = UserRegisterSerializer(data=request.data)
 
     if serializer.is_valid():
+
         try:
             user = User.objects.create_user(
                 username=serializer.validated_data['username'],
                 email=serializer.validated_data['email'],
-                password=serializer.validated_data['password'],
+                password=serializer.validated_data['password']
             )
         
+            access = AccessToken.for_user(user)
             refresh = RefreshToken.for_user(user)
             user.save()
             return Response(
                 {
                     "success": "Registered",
-                    # 'refresh': str(refresh),
-                    'access': str(refresh.access_token),
+                    'refresh': str(refresh),
+                    'access': str(access),
                 },
                 status=status.HTTP_201_CREATED
             )
@@ -118,25 +116,34 @@ def register(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_listing(request):
-    title = request.POST.get("title")
-    description = request.POST.get("description")
-    bid = request.POST.get("bid")
-    image = request.POST.get("image")
-    category = request.POST.get("category")
-    time = datetime.now()
+    # title = request.data["title"]
+    # description = request.POST.get("description")
+    # bid = request.POST.get("bid")
+    # image = request.POST.get("image")
+    # category = request.POST.get("category")
+    # time = datetime.now()
+
+    serializer = ListingSerializer(data=request.data)
+    if serializer.is_valid():
+        print(serializer.validated_data['title'])
+    else:
+        print(serializer.errors)
+
+
 
     # Adds user input to the listings table
-    Listing(title=title, 
-             description=description, 
-             bid=bid,
-             image=image, 
-             category=category,
-             time=time.strftime("%B %d, %Y %I:%M %p"),
-             user_id=request.user.id,
-             ).save()
+    # Listing(title=title, 
+    #          description=description, 
+    #          bid=bid,
+    #          image=image, 
+    #          category=category,
+    #          time=time.strftime("%B %d, %Y %I:%M %p"),
+    #          user_id=request.user.id,
+    #          ).save()
 
     return Response(
-        {"success": "Listing added successfully"},
+        # {"success": "Listing added successfully"},
+        {"error": "Listing added successfully"},
         status=status.HTTP_201_CREATED
     )
 

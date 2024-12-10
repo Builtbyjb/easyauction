@@ -22,8 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CATEGORIES, SERVER_URL } from "@/lib/constants";
-import { getJWTToken } from "@/lib/utils";
+import { CATEGORIES } from "@/lib/constants";
+import api from "@/lib/api";
 
 const ACCEPTED_IMAGE_TYPES = [
   "image/jpeg",
@@ -100,41 +100,29 @@ export default function CreateListingPage() {
     }
     formData.append("category", values.category);
 
-    const JWTToken = getJWTToken();
-
     try {
-      const data = await fetch(`${SERVER_URL}/create_listing`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${JWTToken}`,
-          "Content-Type": "multipart/form-data",
-        },
-        body: formData,
-      });
+      const response = await api.post("/api/v0/create_listing", formData);
 
-      const response = await data.json();
-
-      if (response.success) {
+      if (response.data.success) {
         clearAllFields();
         clearImageInput();
-        setIsLoading(false);
-        setResponseMessage(response.success);
+        setResponseMessage(response.data.success);
       } else {
-        setIsLoading(false);
         console.error(response);
       }
     } catch (error) {
       clearAllFields();
       clearImageInput();
-      setIsLoading(false);
       console.error(error);
+    } finally {
+      setIsLoading(false);
     }
   }
 
   return (
     <>
-      <h1 className="text-3xl font-bold mb-6">Create New Listing</h1>
-      <p className="text-sm text-red-500 dark:text-red-400">
+      <h1 className="text-3xl font-bold mb-2">Create New Listing</h1>
+      <p className="text-sm text-green-900 dark:text-green-900 font-semibold mb-6">
         {responseMessage}
       </p>
       <Form {...form}>

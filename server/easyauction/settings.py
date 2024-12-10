@@ -88,6 +88,8 @@ SIMPLE_JWT = {
 }
 
 ROOT_URLCONF = 'easyauction.urls'
+MEDIA_URL = "/uploads/"
+MEDIA_ROOT = os.path.join(BASE_DIR, 'uploads')
 
 TEMPLATES = [
     {

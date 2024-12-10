@@ -1,20 +1,22 @@
 import { useState, useEffect, useRef } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
-import { getJWTToken } from "@/lib/utils";
 import { CATEGORIES } from "@/lib/constants";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isCategoriesOpen, setIsServicesOpen] = useState(false);
   const categoriesRef = useRef<HTMLDivElement>(null);
-  const [isAuth, setIsAuth] = useState(false);
+  const [auth, setAuth] = useState(false);
 
   useEffect(() => {
-    if (getJWTToken() === null) {
-      setIsAuth(false);
-    } else {
-      setIsAuth(true);
-    }
+    const veriftyToken = () => {
+      const token = localStorage.getItem("ACCESS_TOKEN");
+      if (token) {
+        setAuth(true);
+      }
+    };
+
+    veriftyToken();
 
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -40,7 +42,8 @@ const Navbar = () => {
   };
 
   const logOut = () => {
-    localStorage.removeItem("JWTToken");
+    localStorage.removeItem("ACCESS_TOKEN");
+    localStorage.removeItem("REFRESH_TOKEN");
     window.location.assign("/login");
   };
 
@@ -55,7 +58,7 @@ const Navbar = () => {
           </div>
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-4">
-              {isAuth ? (
+              {auth ? (
                 <a
                   id="username"
                   className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
@@ -71,13 +74,47 @@ const Navbar = () => {
               >
                 Active Listings
               </a>
-              {isAuth ? (
+              <div className="relative group" ref={categoriesRef}>
+                <button
+                  onClick={toggleCategories}
+                  className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700 inline-flex items-center"
+                >
+                  Categories
+                  {isCategoriesOpen ? (
+                    <ChevronDown className="ml-1 h-4 w-4 rotate-180" />
+                  ) : (
+                    <ChevronDown className="ml-1 h-4 w-4" />
+                  )}
+                </button>
+                {isCategoriesOpen && (
+                  <div className="absolute z-20 left-0 mt-2 w-48 rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5">
+                    <div
+                      className="py-1"
+                      role="menu"
+                      aria-orientation="vertical"
+                      aria-labelledby="options-menu"
+                    >
+                      {CATEGORIES.map((category) => (
+                        <a
+                          key={category.id}
+                          href={category.url}
+                          className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
+                          onClick={() => setIsServicesOpen(false)}
+                        >
+                          {category.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {auth ? (
                 <>
                   <a
-                    href="/all_listings"
+                    href="/your_listings"
                     className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
                   >
-                    All Listings
+                    Your Listings
                   </a>
                   <a
                     href="/create_listing"
@@ -91,42 +128,8 @@ const Navbar = () => {
                   >
                     Watchlists
                   </a>
-                  <div className="relative group" ref={categoriesRef}>
-                    <button
-                      onClick={toggleCategories}
-                      className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700 inline-flex items-center"
-                    >
-                      Categories
-                      {isCategoriesOpen ? (
-                        <ChevronDown className="ml-1 h-4 w-4 rotate-180" />
-                      ) : (
-                        <ChevronDown className="ml-1 h-4 w-4" />
-                      )}
-                    </button>
-                    {isCategoriesOpen && (
-                      <div className="absolute z-20 left-0 mt-2 w-48 rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5">
-                        <div
-                          className="py-1"
-                          role="menu"
-                          aria-orientation="vertical"
-                          aria-labelledby="options-menu"
-                        >
-                          {CATEGORIES.map((category) => (
-                            <a
-                              key={category.id}
-                              href={category.url}
-                              className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
-                              onClick={() => setIsServicesOpen(false)}
-                            >
-                              {category.label}
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
                   <a
-                    className="block px-3 py-2 rounded-md text-base font-medium bg-red-500 hover:bg-red-700"
+                    className="px-3 py-2 rounded-md text-base font-medium bg-red-500 hover:bg-red-700"
                     onClick={logOut}
                   >
                     Logout
@@ -175,13 +178,40 @@ const Navbar = () => {
             >
               Active Listings
             </a>
-            {isAuth ? (
+            <div className="relative group" ref={categoriesRef}>
+              <button
+                onClick={toggleCategories}
+                className="w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700 inline-flex items-center justify-between"
+              >
+                Categories
+                {isCategoriesOpen ? (
+                  <ChevronDown className="ml-1 h-4 w-4 rotate-180" />
+                ) : (
+                  <ChevronDown className="ml-1 h-4 w-4" />
+                )}
+              </button>
+              {isCategoriesOpen && (
+                <div className="pl-4">
+                  {CATEGORIES.map((category) => (
+                    <a
+                      key={category.id}
+                      href={category.url}
+                      className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
+                      onClick={() => setIsServicesOpen(false)}
+                    >
+                      {category.label}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+            {auth ? (
               <>
                 <a
-                  href="/all_listings"
+                  href="/your_listings"
                   className="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700"
                 >
-                  All Listings
+                  Your Listings
                 </a>
                 <a
                   href="/create_listing"
@@ -195,53 +225,6 @@ const Navbar = () => {
                 >
                   Watchlists
                 </a>
-                <div className="relative group" ref={categoriesRef}>
-                  <button
-                    onClick={toggleCategories}
-                    className="w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700 inline-flex items-center justify-between"
-                  >
-                    Categories
-                    {isCategoriesOpen ? (
-                      <ChevronDown className="ml-1 h-4 w-4 rotate-180" />
-                    ) : (
-                      <ChevronDown className="ml-1 h-4 w-4" />
-                    )}
-                  </button>
-                  {isCategoriesOpen && (
-                    <div className="pl-4">
-                      <a
-                        href="/categories/fashion"
-                        className="block px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
-                        onClick={() => {
-                          setIsServicesOpen(false);
-                          setIsOpen(false);
-                        }}
-                      >
-                        Fashion
-                      </a>
-                      <a
-                        href="/categories/toys"
-                        className="block px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
-                        onClick={() => {
-                          setIsServicesOpen(false);
-                          setIsOpen(false);
-                        }}
-                      >
-                        Toys
-                      </a>
-                      <a
-                        href="/categories/electronics"
-                        className="block px-3 py-2 rounded-md text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
-                        onClick={() => {
-                          setIsServicesOpen(false);
-                          setIsOpen(false);
-                        }}
-                      >
-                        Electronics
-                      </a>
-                    </div>
-                  )}
-                </div>
                 <a
                   className="block px-3 py-2 rounded-md text-base font-medium bg-red-500 hover:bg-red-700"
                   onClick={logOut}
