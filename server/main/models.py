@@ -9,11 +9,12 @@ class User(AbstractUser):
         return f"User ID: {self.id}, Username: {self.username}"
 
 class Listing(models.Model):
-    user_id = models.IntegerField()
+    creator_id = models.IntegerField()
+    creator = models.CharField(max_length=50, null=True)
     title = models.CharField(max_length=12)
-    image = models.ImageField(upload_to="uploads/", null=True)
+    image = models.ImageField(upload_to="", null=True)
     description = models.CharField(max_length=1000, null=True)
-    bid = models.CharField(max_length=10, null=True)
+    price = models.CharField(max_length=10, null=True)
     category = models.CharField(max_length=20, null=True)
     time = models.CharField(max_length=50, null=True)
     is_active = models.BooleanField(max_length=10, default=True)

@@ -1,3 +1,6 @@
+export const URL_FIX = "/api/v0";
+export const IMAGE_URL = import.meta.env.VITE_IMAGE_URL;
+
 export const CATEGORIES = [
   {
     id: 1,

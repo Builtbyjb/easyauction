@@ -56,7 +56,6 @@ const formSchema = z.object({
 
 export default function CreateListingPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const [responseMessage, setResponseMessage] = useState("");
   const [imagePath, setImagePath] = useState("");
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -96,7 +95,7 @@ export default function CreateListingPage() {
     formData.append("description", values.description);
     formData.append("price", values.price.toString());
     if (values.image) {
-      formData.append("image", values.image, "file");
+      formData.append("image", values.image);
     }
     formData.append("category", values.category);
 
@@ -106,7 +105,7 @@ export default function CreateListingPage() {
       if (response.data.success) {
         clearAllFields();
         clearImageInput();
-        setResponseMessage(response.data.success);
+        alert(response.data.success);
       } else {
         console.error(response);
       }
@@ -122,9 +121,6 @@ export default function CreateListingPage() {
   return (
     <>
       <h1 className="text-3xl font-bold mb-2">Create New Listing</h1>
-      <p className="text-sm text-green-900 dark:text-green-900 font-semibold mb-6">
-        {responseMessage}
-      </p>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <FormField

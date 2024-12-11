@@ -116,35 +116,56 @@ def register(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_listing(request):
-    # title = request.data["title"]
-    # description = request.POST.get("description")
-    # bid = request.POST.get("bid")
-    # image = request.POST.get("image")
-    # category = request.POST.get("category")
-    # time = datetime.now()
 
     serializer = ListingSerializer(data=request.data)
     if serializer.is_valid():
-        print(serializer.validated_data['title'])
+        time = datetime.now()
+
+        new_listing = Listing(
+            title=serializer.validated_data['title'], 
+            creator=request.user.username, 
+            description=serializer.validated_data['description'], 
+            price=serializer.validated_data['price'],
+            image=serializer.validated_data['image'], 
+            category=serializer.validated_data['category'],
+            time=time.strftime("%B %d, %Y %I:%M %p"),
+            creator_id=request.user.id,
+        )
+
+        new_listing.save()
+
+        return Response(
+            {"success": "Listing added successfully"},
+            status=status.HTTP_201_CREATED
+        )
     else:
-        print(serializer.errors)
+        return Response(
+            {"error": "Could not process the request"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
-
-    # Adds user input to the listings table
-    # Listing(title=title, 
-    #          description=description, 
-    #          bid=bid,
-    #          image=image, 
-    #          category=category,
-    #          time=time.strftime("%B %d, %Y %I:%M %p"),
-    #          user_id=request.user.id,
-    #          ).save()
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def listings(request):
+    listings = Listing.objects.filter(is_active=True).order_by("-id")
+    serialized_listings = ListingSerializer(listings, many=True).data
 
     return Response(
-        # {"success": "Listing added successfully"},
-        {"error": "Listing added successfully"},
-        status=status.HTTP_201_CREATED
+        {"listings": serialized_listings},
+        status=status.HTTP_200_OK
+    )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_listings(request):
+    listings = Listing.objects.all().order_by("-id")
+    serialized_listings = ListingSerializer(listings, many=True).data
+
+    return Response(
+        {"listings": serialized_listings},
+        status=status.HTTP_200_OK
     )
 
 

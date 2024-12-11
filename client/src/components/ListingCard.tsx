@@ -5,12 +5,13 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { IMAGE_URL } from "@/lib/constants";
 
 const AVATAR = "/placeholder.svg?height=32&width=32";
 
 interface ListingCardProps {
   image: string;
-  price: number;
+  price: string;
   title: string;
   description: string;
   category: string;
@@ -27,13 +28,14 @@ export function ListingCard({
   time,
   creator,
 }: ListingCardProps) {
+  const imageURL = `${IMAGE_URL}${image}`;
   return (
     <Card className="overflow-hidden">
       <CardHeader className="p-0">
         <div className="relative h-48 w-full">
-          <img src={image} alt={title} />
-          <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded">
-            ${price.toFixed(2)}
+          <img src={imageURL} alt={title} className="object-cover h-48" />
+          <div className="absolute top-2 left-2 bg-black bg-opacity-80 text-white px-2 py-1 rounded">
+            ${price}
           </div>
         </div>
       </CardHeader>
@@ -46,11 +48,20 @@ export function ListingCard({
         </div>
       </CardContent>
       <CardFooter className="p-4 pt-0 flex items-center">
-        <Avatar className="h-8 w-8 mr-2">
-          <AvatarImage src={AVATAR} alt={creator} />
-          <AvatarFallback>{creator[0]}</AvatarFallback>
-        </Avatar>
-        <span className="text-sm">{creator}</span>
+        {creator ? (
+          <>
+            <Avatar className="h-8 w-8 mr-2">
+              <AvatarImage src={AVATAR} alt={creator} />
+              <AvatarFallback>{creator.charAt(0).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <span className="text-sm">
+              {/* Capitalize the first character of the creator username */}
+              {creator.charAt(0).toUpperCase() + creator.slice(1)}
+            </span>
+          </>
+        ) : (
+          <></>
+        )}
       </CardFooter>
     </Card>
   );

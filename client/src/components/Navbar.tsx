@@ -58,7 +58,7 @@ const Navbar = () => {
           </div>
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-4">
-              {auth ? (
+              {/* {auth ? (
                 <a
                   id="username"
                   className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
@@ -67,7 +67,7 @@ const Navbar = () => {
                 </a>
               ) : (
                 <></>
-              )}
+              )} */}
               <a
                 href="/"
                 className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
@@ -111,10 +111,10 @@ const Navbar = () => {
               {auth ? (
                 <>
                   <a
-                    href="/your_listings"
+                    href="/my_listings"
                     className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
                   >
-                    Your Listings
+                    My Listings
                   </a>
                   <a
                     href="/create_listing"
@@ -208,10 +208,10 @@ const Navbar = () => {
             {auth ? (
               <>
                 <a
-                  href="/your_listings"
+                  href="/my_listings"
                   className="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700"
                 >
-                  Your Listings
+                  My Listings
                 </a>
                 <a
                   href="/create_listing"

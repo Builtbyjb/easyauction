@@ -19,18 +19,18 @@ function ProtectedLayout({ children }: Props) {
         refresh: refreshToken,
       });
 
-      console.log(response);
-
       if (response.status === 200) {
         localStorage.setItem("ACCESS_TOKEN", response.data.access);
         setIsAuth(true);
-        console.log("re");
       } else {
         setIsAuth(false);
       }
     } catch (error) {
-      console.error(error);
+      console.error("Refresh token expired", error);
       setIsAuth(false);
+      localStorage.removeItem("ACCESS_TOKEN");
+      localStorage.removeItem("REFRESH_TOKEN");
+      window.location.assign("/login");
     }
   };
 
@@ -42,12 +42,10 @@ function ProtectedLayout({ children }: Props) {
         const tokenExpiration = decoded.exp;
         const now = Date.now() / 1000; //Gets date in secs instead of ms
 
-        if (tokenExpiration) {
-          if (tokenExpiration < now) {
-            await refreshToken();
-          } else {
-            setIsAuth(true);
-          }
+        if (tokenExpiration && tokenExpiration < now) {
+          await refreshToken();
+        } else {
+          setIsAuth(true);
         }
       } else {
         setIsAuth(false);

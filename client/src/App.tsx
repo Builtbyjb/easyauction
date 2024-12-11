@@ -5,7 +5,7 @@ import Index from "./pages/index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import CreateListing from "./pages/CreateListing";
-import YourListings from "./pages/YourListings";
+import MyListings from "./pages/MyListings";
 import NotFound from "./pages/NotFound";
 import Watchlists from "./pages/Watchlists";
 import Categories from "./pages/Categories";
@@ -24,10 +24,10 @@ function App() {
           }
         />
         <Route
-          path="/your_listings"
+          path="/my_listings"
           element={
             <ProtectedLayout>
-              <YourListings />
+              <MyListings />
             </ProtectedLayout>
           }
         />
