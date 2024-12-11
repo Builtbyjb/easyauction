@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { CATEGORIES } from "@/lib/constants";
+import { logOut } from "@/lib/utils";
 
-const Navbar = () => {
+export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isCategoriesOpen, setIsServicesOpen] = useState(false);
   const categoriesRef = useRef<HTMLDivElement>(null);
@@ -41,11 +42,11 @@ const Navbar = () => {
     setIsServicesOpen(!isCategoriesOpen);
   };
 
-  const logOut = () => {
-    localStorage.removeItem("ACCESS_TOKEN");
-    localStorage.removeItem("REFRESH_TOKEN");
-    window.location.assign("/login");
-  };
+  // const logOut = () => {
+  //   localStorage.removeItem("ACCESS_TOKEN");
+  //   localStorage.removeItem("REFRESH_TOKEN");
+  //   window.location.assign("/login");
+  // };
 
   return (
     <nav className="bg-zinc-900 text-white">
@@ -253,6 +254,4 @@ const Navbar = () => {
       )}
     </nav>
   );
-};
-
-export default Navbar;
+}

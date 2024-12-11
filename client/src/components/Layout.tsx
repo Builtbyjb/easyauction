@@ -1,11 +1,12 @@
 import { ReactNode } from "react";
 import Navbar from "./Navbar";
+import Footer from "./Footer";
 
 interface Props {
   children: ReactNode;
 }
 
-function Layout({ children }: Props) {
+export default function Layout({ children }: Props) {
   return (
     <>
       <Navbar />
@@ -14,8 +15,7 @@ function Layout({ children }: Props) {
           <div className="container mx-auto px-4 py-8">{children}</div>
         </div>
       </div>
+      <Footer />
     </>
   );
 }
-
-export default Layout;

@@ -3,13 +3,15 @@ import { Navigate } from "react-router";
 import { jwtDecode } from "jwt-decode";
 import Navbar from "./Navbar";
 import api from "@/lib/api";
-import { LoadingPage } from "./LoadingPage";
+import LoadingPage from "./LoadingPage";
+import Footer from "./Footer";
+import { logOut } from "@/lib/utils";
 
 interface Props {
   children: ReactNode;
 }
 
-function ProtectedLayout({ children }: Props) {
+export default function ProtectedLayout({ children }: Props) {
   const [isAuth, setIsAuth] = useState<boolean | null>(null);
 
   const refreshToken = async () => {
@@ -28,9 +30,7 @@ function ProtectedLayout({ children }: Props) {
     } catch (error) {
       console.error("Refresh token expired", error);
       setIsAuth(false);
-      localStorage.removeItem("ACCESS_TOKEN");
-      localStorage.removeItem("REFRESH_TOKEN");
-      window.location.assign("/login");
+      logOut();
     }
   };
 
@@ -72,8 +72,7 @@ function ProtectedLayout({ children }: Props) {
           )}
         </div>
       </div>
+      <Footer />
     </>
   );
 }
-
-export default ProtectedLayout;

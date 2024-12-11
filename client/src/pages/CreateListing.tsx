@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/select";
 import { CATEGORIES } from "@/lib/constants";
 import api from "@/lib/api";
+import { URL_FIX } from "@/lib/constants";
+import { logOut } from "@/lib/utils";
 
 const ACCEPTED_IMAGE_TYPES = [
   "image/jpeg",
@@ -100,9 +102,10 @@ export default function CreateListingPage() {
     formData.append("category", values.category);
 
     try {
-      const response = await api.post("/api/v0/create_listing", formData);
-
-      if (response.data.success) {
+      const response = await api.post(`${URL_FIX}/create_listing`, formData);
+      if (response.status === 401) {
+        logOut();
+      } else if (response.status === 200) {
         clearAllFields();
         clearImageInput();
         alert(response.data.success);

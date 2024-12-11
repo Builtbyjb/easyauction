@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router";
+import { Routes, Route, Navigate } from "react-router";
 import Layout from "./components/Layout";
 import ProtectedLayout from "./components/ProtectedLayout";
 import Index from "./pages/index";
@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import Watchlists from "./pages/Watchlists";
 import Categories from "./pages/Categories";
 import { CATEGORIES } from "./lib/constants";
+import Listing from "./pages/Listing";
 
 function App() {
   return (
@@ -47,14 +48,26 @@ function App() {
             </ProtectedLayout>
           }
         />
-        <Route>
+        <Route path="listing">
+          <Route index element={<Navigate to="/" />} />
+          <Route
+            path=":id"
+            element={
+              <ProtectedLayout>
+                <Listing />
+              </ProtectedLayout>
+            }
+          />
+        </Route>
+        <Route path="categories">
+          <Route index element={<Navigate to="/" />} />
           {CATEGORIES.map((category) => (
             <Route
               key={category.id}
-              path={category.url}
+              path={category.value}
               element={
                 <Layout>
-                  <Categories type={category.label} />
+                  <Categories type={category.label} path={category.value} />
                 </Layout>
               }
             />

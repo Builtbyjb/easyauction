@@ -171,13 +171,11 @@ def my_listings(request):
 
 @api_view(['GET'])
 def category(request, category_type):
-    category = Listing.objects.filter(category=category_type)
+    listings = Listing.objects.filter(category=category_type).order_by("-id")
+    serialized_listings = ListingSerializer(listings, many=True).data
 
     return Response(
-        {
-            "category": category,
-            "category_type": category_type,
-        },
+        {"listings": serialized_listings},
         status=status.HTTP_200_OK
     )
 
@@ -215,12 +213,10 @@ def watchlists(request):
             status=status.HTTP_200_OK
         )
     else:
-        watchlists = Watchlist.objects.filter(user_id = request.user.id)
+        listings = Watchlist.objects.filter(user_id = request.user.id)
+        serialized_listings = ListingSerializer(listings, many=True).data
         return Response(
-            {
-                "watchlists": watchlists,
-                "number": len(watchlists),
-            },
+            {"listings": serialized_listings},
             status=status.HTTP_200_OK
         )
 
@@ -235,7 +231,7 @@ def listing(request, listing_id):
     # Only gets the watchlist listings of the current user
     watchlists = Watchlist.objects.filter(user_id = request.user.id)
 
-    comments = Comment.objects.filter(listing_id= listing.id)
+    comments = Comment.objects.filter(listing_id= listing_id)
 
     # Adds the ids of every listing in the watchlist to a list(watchlist_id)
     for watch_list in watchlists:
@@ -252,7 +248,7 @@ def listing(request, listing_id):
         bid_user.append(int(user_bid.user_id))
 
     # Sets initial values
-    listing_creator = False
+    isCreator = False
     auction_winner = False
     highest_bid = 0
 
@@ -280,10 +276,10 @@ def listing(request, listing_id):
     if request.user.id is None:
         pass
     else:
-        if int(listing.user_id) == int(request.user.id):
-            listing_creator = True
+        if int(listing.creator_id) == int(request.user.id):
+            isCreator = True
         else:
-            listing_creator = False
+            isCreator = False
     
     if request.user.is_authenticated:
         user_authenticated = True
@@ -358,7 +354,7 @@ def listing(request, listing_id):
                 "user_authenticated": user_authenticated,
                 "unique_listing": unique_listing,
                 "listing_owner": User.objects.get(id=listing.user_id),
-                "listing_creator": listing_creator,
+                "listing_creator": isCreator,
                 "highest_bid": highest_bid,
                 "number_of_bids": len(bids_list),
                 "is_active": listing.is_active,
@@ -369,18 +365,20 @@ def listing(request, listing_id):
             status=status.HTTP_200_OK
         )
 
-    return render(
-        {
-            "listing": listing,
-            "user_authenticated": user_authenticated,
-            "unique_listing": unique_listing,
-            "listing_owner": User.objects.get(id=listing.user_id),
-            "listing_creator": listing_creator,
-            "highest_bid": highest_bid,
-            "number_of_bids": len(bids_list),
-            "is_active": listing.is_active,
-            "auction_winner": auction_winner,
-            "comments": comments,
-        }
-    )
+    else:
+        serialized_listing = ListingSerializer(listing, many=False).data
+
+        return Response(
+            {
+                "listing": serialized_listing,
+                "user_authenticated": user_authenticated,
+                "unique_listing": unique_listing,
+                "isCreator": isCreator,
+                "highest_bid": highest_bid,
+                "number_of_bids": len(bids_list),
+                "auction_winner": auction_winner,
+                "comments": comments,
+            },
+            status=status.HTTP_200_OK
+        )
     

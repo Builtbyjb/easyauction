@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 
-export function LoadingPage() {
+export default function LoadingPage() {
   return (
     <div className="flex flex-col items-center">
       {/* <motion.div
