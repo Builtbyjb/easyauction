@@ -5,7 +5,6 @@ import { URL_FIX } from "@/lib/constants";
 import { v4 as uuidv4 } from "uuid";
 import LoadingPage from "@/components/LoadingPage";
 import NoListingsAvailable from "@/components/NoListingAvailable";
-import { logOut } from "@/lib/utils";
 
 interface Props {
   type: string;
@@ -30,9 +29,7 @@ export default function Categories({ type, path }: Props) {
     const getListings = async () => {
       try {
         const response = await api.get(`${URL_FIX}/categories/${path}`);
-        if (response.status === 401) {
-          logOut();
-        } else if (response.status === 200) {
+        if (response.status === 200) {
           setListings(response.data.listings);
         }
       } catch (error) {

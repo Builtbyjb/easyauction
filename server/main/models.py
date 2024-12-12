@@ -11,10 +11,11 @@ class User(AbstractUser):
 class Listing(models.Model):
     creator_id = models.IntegerField()
     creator = models.CharField(max_length=50, null=True)
-    title = models.CharField(max_length=12)
+    title = models.CharField(max_length=12, null=True)
     image = models.ImageField(upload_to="", null=True)
     description = models.CharField(max_length=1000, null=True)
     price = models.CharField(max_length=10, null=True)
+    highest_bid = models.CharField(max_length=10, null=True)
     category = models.CharField(max_length=20, null=True)
     time = models.CharField(max_length=50, null=True)
     is_active = models.BooleanField(max_length=10, default=True)
@@ -25,14 +26,9 @@ class Listing(models.Model):
 class Watchlist(models.Model):
     user_id = models.IntegerField()
     listing_id = models.IntegerField(primary_key=True)
-    title = models.CharField(max_length=120, null=True)
-    image = models.CharField(max_length=500, null=True)
-    description = models.CharField(max_length=1000, null=True)
-    bid = models.CharField(max_length=10, null=True)
-    time = models.CharField(max_length=50, null=True)
 
     def __str__(self):
-        return f"Listing ID: {self.listing_id}, User ID: {self.user_id}, Listing Title: {self.title}"
+        return f"Listing ID: {self.listing_id}, User ID: {self.user_id}"
 
 class Bid(models.Model):
     user_id = models.IntegerField()

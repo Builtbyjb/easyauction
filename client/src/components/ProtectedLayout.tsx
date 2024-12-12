@@ -5,7 +5,6 @@ import Navbar from "./Navbar";
 import api from "@/lib/api";
 import LoadingPage from "./LoadingPage";
 import Footer from "./Footer";
-import { logOut } from "@/lib/utils";
 
 interface Props {
   children: ReactNode;
@@ -30,7 +29,6 @@ export default function ProtectedLayout({ children }: Props) {
     } catch (error) {
       console.error("Refresh token expired", error);
       setIsAuth(false);
-      logOut();
     }
   };
 

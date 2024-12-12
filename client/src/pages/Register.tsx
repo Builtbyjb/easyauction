@@ -55,12 +55,12 @@ export default function RegisterPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
+    // Clear out any previous tokens, if any
+    localStorage.removeItem("ACCESS_TOKEN");
+    localStorage.removeItem("REFRESH_TOKEN");
+
     try {
       const response = await api.post("/api/v0/register", values);
-
-      // Clear out any previous tokens
-      localStorage.removeItem("ACCESS_TOKEN");
-      localStorage.removeItem("REFRESH_TOKEN");
 
       if (response.status === 201) {
         localStorage.setItem("ACCESS_TOKEN", response.data.access);

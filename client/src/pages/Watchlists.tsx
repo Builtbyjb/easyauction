@@ -5,7 +5,6 @@ import { URL_FIX } from "@/lib/constants";
 import { v4 as uuidv4 } from "uuid";
 import LoadingPage from "@/components/LoadingPage";
 import NoListingsAvailable from "@/components/NoListingAvailable";
-import { logOut } from "@/lib/utils";
 
 interface Listing {
   id: string;
@@ -25,9 +24,7 @@ export default function Watchlists() {
     const getListings = async () => {
       try {
         const response = await api.get(`${URL_FIX}/watchlists`);
-        if (response.status === 401) {
-          logOut();
-        } else if (response.status === 200) {
+        if (response.status === 200) {
           setListings(response.data.listings);
         }
       } catch (error) {

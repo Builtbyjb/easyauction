@@ -1,4 +1,4 @@
-from .models import User, Listing
+from .models import User, Listing, Watchlist, Comment
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
@@ -32,14 +32,15 @@ class UserLoginSerializer(serializers.ModelSerializer):
 
 
 class ListingSerializer(serializers.ModelSerializer):
-    title = serializers.CharField(required=True)
-    description = serializers.CharField(required=True)
-    image = serializers.ImageField(required=True)
-    price = serializers.CharField(required=True)
-    category = serializers.CharField(required=True)
+    title = serializers.CharField(required=False)
+    description = serializers.CharField(required=False)
+    image = serializers.ImageField(required=False)
+    price = serializers.CharField(required=False)
+    highest_bid = serializers.CharField(required=False)
+    category = serializers.CharField(required=False)
     time = serializers.CharField(required=False)
     creator = serializers.CharField(required=False)
-    is_active = serializers.CharField(required=False)
+    is_active = serializers.BooleanField(required=False)
 
     class Meta:
         model = Listing
@@ -50,7 +51,26 @@ class ListingSerializer(serializers.ModelSerializer):
             "description", 
             "image", 
             "price", 
+            "highest_bid",
             "category", 
             "time", 
             "is_active"
         ]
+
+
+class WatchlistSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(required=False)
+    listing_id = serializers.IntegerField(required=False)
+
+    class Meta:
+        model = Watchlist
+        fields = ["user_id", "listing_id"]
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    listing_id = serializers.IntegerField(required=False)
+    comment = serializers.CharField(required=False)
+
+    class Meta:
+        model = Comment
+        fields = ["listing_id","comment"]

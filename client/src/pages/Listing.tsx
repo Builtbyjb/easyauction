@@ -41,6 +41,7 @@ interface Listing {
   category: string;
   image: string;
   time: string;
+  highest_bid: string;
 }
 
 const AVATAR = "/placeholder.svg?height=32&width=32";
@@ -58,11 +59,18 @@ const bidFormSchema = z.object({
 });
 
 export default function Listing() {
+  const [listing, setListing] = useState<Listing | null>(null);
+  const [isBidding, setIsBidding] = useState<boolean>(false);
+  const [isCommenting, setIsCommenting] = useState<boolean>(false);
+  const [isDeactivating, setIsDeactivating] = useState<boolean>(false);
+  const [isActivating, setIsActivating] = useState<boolean>(false);
+  const [isAdding, setIsAdding] = useState<boolean>(false);
+  const [isRemoving, setIsRemoving] = useState<boolean>(false);
+  const [isActive, setActive] = useState<boolean>(true);
+  const [inWatchlist, setInWatchlist] = useState<boolean>(false);
+
   // Gets id from the url
   const { id } = useParams<{ id: string }>();
-
-  const [listing, setListing] = useState<Listing | null>(null);
-  const [bidMessage, setBidMessage] = useState<string>("");
 
   const commentForm = useForm<z.infer<typeof commentFormSchema>>({
     resolver: zodResolver(commentFormSchema),
@@ -78,8 +86,13 @@ export default function Listing() {
   });
 
   async function onBidSubmit(values: z.infer<typeof bidFormSchema>) {
+    setIsBidding(true);
+    const data = {
+      listing_id: id,
+      bid: values.bid,
+    };
     try {
-      const response = await api.post(`${URL_FIX}/listing/${id}`, values);
+      const response = await api.post(`${URL_FIX}/bid`, data);
       if (response.status === 401) {
         logOut();
       }
@@ -91,12 +104,19 @@ export default function Listing() {
       }
     } catch (error) {
       console.error(error);
+    } finally {
+      setIsBidding(false);
     }
   }
 
   async function onCommentSubmit(values: z.infer<typeof commentFormSchema>) {
+    setIsCommenting(true);
+    const data = {
+      listing_id: id,
+      comment: values.comment,
+    };
     try {
-      const response = await api.post(`${URL_FIX}/listing/${id}`, values);
+      const response = await api.post(`${URL_FIX}/comment`, data);
       if (response.status === 401) {
         logOut();
       } else if (response.data.success) {
@@ -104,6 +124,76 @@ export default function Listing() {
       }
     } catch (error) {
       console.error(error);
+    } finally {
+      setIsCommenting(false);
+    }
+  }
+
+  async function addToWatchlist() {
+    setIsAdding(true);
+    const data = { add_to_watchlist: id };
+    try {
+      const response = await api.post(`${URL_FIX}/watchlists`, data);
+      if (response.status === 401) {
+        logOut();
+      } else if (response.data.success) {
+        alert(response.data.success);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsAdding(false);
+    }
+  }
+
+  async function removeFromWatchlist() {
+    setIsRemoving(true);
+    const data = { add_to_watchlist: id };
+    try {
+      const response = await api.post(`${URL_FIX}/watchlists`, data);
+      if (response.status === 401) {
+        logOut();
+      } else if (response.data.success) {
+        alert(response.data.success);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsRemoving(false);
+    }
+  }
+
+  async function handleDeactivate() {
+    setIsDeactivating(true);
+    const data = { is_active: false };
+    try {
+      const response = await api.post(`${URL_FIX}/listing/${id}`, data);
+      if (response.status === 401) {
+        logOut();
+      } else if (response.data.success) {
+        alert(response.data.success);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsDeactivating(false);
+    }
+  }
+
+  async function handleActivate() {
+    setIsActivating(true);
+    const data = { is_active: true };
+    try {
+      const response = await api.post(`${URL_FIX}/listing/${id}`, data);
+      if (response.status === 401) {
+        logOut();
+      } else if (response.data.success) {
+        alert(response.data.success);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsActivating(false);
     }
   }
 
@@ -115,6 +205,8 @@ export default function Listing() {
           logOut();
         } else if (response.status === 200) {
           setListing(response.data.listing);
+          setActive(response.data.listing.is_active);
+          setInWatchlist(response.data.in_watchlist);
         }
       } catch (error) {
         console.error(error);
@@ -133,8 +225,28 @@ export default function Listing() {
     <>
       <Card className="overflow-hidden">
         <div className="flex justify-between m-4">
-          <Button variant="destructive">Deactivate</Button>
-          <Button>Add to watchlist</Button>
+          {isActive ? (
+            <Button
+              variant="destructive"
+              onClick={() => handleDeactivate()}
+              disabled={isDeactivating}
+            >
+              {isDeactivating ? "Deactivating" : "Deactivate"}
+            </Button>
+          ) : (
+            <Button onClick={() => handleActivate()} disabled={isActivating}>
+              {isActivating ? "Activating" : "Activate"}
+            </Button>
+          )}
+          {inWatchlist ? (
+            <Button onClick={() => removeFromWatchlist()} disabled={isRemoving}>
+              {isRemoving ? "Removing from watchlist" : "Remove from watchlist"}
+            </Button>
+          ) : (
+            <Button onClick={() => addToWatchlist()} disabled={isAdding}>
+              {isAdding ? "Adding to Watchlist" : "Add to watchlist"}
+            </Button>
+          )}
         </div>
         <CardHeader>
           <CardTitle className="text-2xl md:text-3xl">
@@ -204,7 +316,7 @@ export default function Listing() {
               </div>
               <div className="w-full md:w-1/2 lg:w-1/2">
                 <h3 className="text-lg font-semibold mb-2 mt-4">Bid</h3>
-                <p className="text-gray-600 mb-2">{bidMessage}</p>
+                <p className="font-semibold">${listing.highest_bid}</p>
                 <Form {...bidForm}>
                   <form
                     onSubmit={bidForm.handleSubmit(onBidSubmit)}
@@ -229,7 +341,9 @@ export default function Listing() {
                         </FormItem>
                       )}
                     />
-                    <Button type="submit">Place a bid</Button>
+                    <Button type="submit" disabled={isBidding}>
+                      {isBidding ? "Place a bid " : "Placing bid"}
+                    </Button>
                   </form>
                 </Form>
               </div>
@@ -264,7 +378,9 @@ export default function Listing() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit">Comment</Button>
+                <Button type="submit" disabled={isCommenting}>
+                  {isCommenting ? "Commenting" : "Comment"}
+                </Button>
               </form>
             </Form>
           </div>

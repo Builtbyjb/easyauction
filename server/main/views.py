@@ -11,6 +11,8 @@ from .serializer import (
     UserRegisterSerializer, 
     UserLoginSerializer, 
     ListingSerializer,
+    WatchlistSerializer,
+    CommentSerializer,
 )
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
@@ -183,20 +185,30 @@ def category(request, category_type):
 @api_view(['GET','POST'])
 def watchlists(request):
     if request.method == "POST":
+        print(request.data)
         add_id = request.POST.get('add to watchlist', False) # Gets listing to add
         remove_id = request.POST.get('remove from watchlist', False) # Gets listing to remove
 
         if add_id:
-            listing = Listing.objects.get(id=add_id)
-            # Store the above listing in a watchlist table
-            Watchlist(title=listing.title,
-                    description=listing.description,
-                    bid=listing.bid,
-                    image=listing.image,
-                    time=listing.time,
-                    listing_id=listing.id,
-                    user_id= request.user.id,
-                    ).save()
+            data = {
+                "user_id": request.user.id,
+                "listing_id": request.data
+            }
+
+            serializer = WatchlistSerializer(data=data)
+
+            if serializer.is_valid():
+                watchlist = Watchlist(
+                    listing_id=serializer.validated_data["listing_id"],
+                    user_id=serializer.validated_data["user_id"],
+                )
+
+                watchlist.save()
+
+                return Response(
+                    {'success':'Listing added to watchlist'},
+                    status=status.HTTP_200_OK
+                )
         
         if remove_id:
             # Removes listing from watchlist
@@ -208,10 +220,6 @@ def watchlists(request):
                 status=status.HTTP_200_OK
             )
 
-        return Response(
-            {'success':'Listing added to watchlist'},
-            status=status.HTTP_200_OK
-        )
     else:
         listings = Watchlist.objects.filter(user_id = request.user.id)
         serialized_listings = ListingSerializer(listings, many=True).data
@@ -226,60 +234,41 @@ def listing(request, listing_id):
     watchlist_id = [] # Stores listing ids
 
     listing = Listing.objects.get(id=listing_id)
-
-    # Gets the watchlist listings of the logged in user
-    # Only gets the watchlist listings of the current user
     watchlists = Watchlist.objects.filter(user_id = request.user.id)
-
     comments = Comment.objects.filter(listing_id= listing_id)
 
     # Adds the ids of every listing in the watchlist to a list(watchlist_id)
     for watch_list in watchlists:
         watchlist_id.append(int(watch_list.listing_id))
-        
-    bids_list = [] # Stores all the bids
-    bid_user = [] # Stores bid user IDs
-
-    # Gets all the bids on the listing
-    all_bids = Bid.objects.filter(listing_id = listing_id)
-    
-    for user_bid in all_bids:
-        bids_list.append(int(user_bid.bid))
-        bid_user.append(int(user_bid.user_id))
 
     # Sets initial values
     isCreator = False
     auction_winner = False
-    highest_bid = 0
+    user_highest_bid = []
 
-    if bids_list:
-        highest_bid = max(bids_list) # Gets the highest bid
+    try:
+        # Gets user with the highest bid
+        user_highest_bid = Bid.objects.get(bid=listing.highest_bid) 
+    except Bid.DoesNotExist:
+        pass
 
-        user_highest_bid = Bid.objects.get(bid=highest_bid) # Gets user with the highest bid
-
-         # Checks if the current logged user is the winner of the auction
-        if request.user.id is None:
-            pass
-        else:
-            if int(user_highest_bid.user_id) == int(request.user.id) and not listing.is_active:
-                auction_winner = True
-            else:
-                auction_winner = False
+    # Checks if the current logged user is the winner of the auction
+    # if int(user_highest_bid.user_id) == int(request.user.id) and not listing.is_active:
+    #     auction_winner = True
+    # else:
+    #     auction_winner = False
 
     # Checks if the listing has been added to the watchlist previously
     if listing_id in watchlist_id:
-        unique_listing = False
+        in_watchlist = True
     else:
-        unique_listing = True
+        in_watchlist = False
 
     # Checks if the current user is the creator of the listing
-    if request.user.id is None:
-        pass
+    if int(listing.creator_id) == int(request.user.id):
+        isCreator = True
     else:
-        if int(listing.creator_id) == int(request.user.id):
-            isCreator = True
-        else:
-            isCreator = False
+        isCreator = False
     
     if request.user.is_authenticated:
         user_authenticated = True
@@ -290,21 +279,7 @@ def listing(request, listing_id):
 
         close_listing = request.POST.get("close_listing", False)
         listing_id = request.POST.get("listing_id", False)
-        listing_bid = request.POST.get("listing_bid", False)
-        bid = request.POST.get("bid", False)
-        comment = request.POST.get("comment", False)
         time = datetime.now()
-
-        # Stores comments
-        username = User.objects.get(id=request.user.id)
-
-        if comment is not False:    
-            Comment(user_id = request.user.id,
-                    user_name = username.username,
-                    comment = comment,
-                    listing_id = listing.id,
-                    time= time.strftime("%B %d, %Y %I:%M %p")
-                    ).save()
 
         # Closes a listing
         if close_listing == "0":
@@ -314,53 +289,16 @@ def listing(request, listing_id):
                 {'success': 'Listing closed'},
                 status=status.HTTP_200_OK
             )
-
-        # Stores Bids
-        if bid is not False:
-            try:
-                if int(listing_bid) > int(bid) or int(highest_bid) >= int(bid):
-                    bid_success = 0
-                else:
-                    if request.user.id in bid_user:
-                        c_bid = Bid.objects.get(user_id=request.user.id)
-                        c_bid.bid = bid
-                        c_bid.save()
-                    else:
-                        Bid(listing_id = listing_id,
-                            bid = bid,
-                            user_id = request.user.id,
-                            ).save()
-            
-                        # If a users bid is approved, automatically adds the listing to their watchlist
-                        Watchlist(title=listing.title,
-                                description=listing.description,
-                                bid=listing.bid,
-                                image=listing.image,
-                                time=listing.time,
-                                listing_id=listing.id,
-                                user_id= request.user.id,
-                                ).save()
-
-                        print(int(bid))
-                        bid_success = 1
-            except:
-                bid_success = 2
-        else:
-            bid_success = ""
         
         return Response(
             {
                 "listing": listing,
                 "user_authenticated": user_authenticated,
-                "unique_listing": unique_listing,
-                "listing_owner": User.objects.get(id=listing.user_id),
+                "in_watchlist": in_watchlist,
                 "listing_creator": isCreator,
-                "highest_bid": highest_bid,
-                "number_of_bids": len(bids_list),
                 "is_active": listing.is_active,
                 "auction_winner": auction_winner,
                 "comments": comments,
-                "bid_success": bid_success,
             },
             status=status.HTTP_200_OK
         )
@@ -372,13 +310,82 @@ def listing(request, listing_id):
             {
                 "listing": serialized_listing,
                 "user_authenticated": user_authenticated,
-                "unique_listing": unique_listing,
+                "in_watchlist": in_watchlist,
                 "isCreator": isCreator,
-                "highest_bid": highest_bid,
-                "number_of_bids": len(bids_list),
                 "auction_winner": auction_winner,
                 "comments": comments,
             },
             status=status.HTTP_200_OK
         )
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def comment(request):
+    serializer = CommentSerializer(data=request.data)
+    if serializer.is_valid():
+        user = User.objects.get(id=request.user.id)
+        time = datetime.now()
+        comment = Comment(
+            user_id = request.user.id,
+            user_name = user.username,
+            comment = comment,
+            listing_id = listing.id,
+            time= time.strftime("%B %d, %Y %I:%M %p")
+        )
+        comment.save()
+        return Response(
+            {"success": "Comment added"},
+            status=status.HTTP_200_OK
+        )
+    else:
+        return Response(
+            serializer.errors,
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
     
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def bid(request):
+    bids_list = [] # Stores all the bids
+    bid_user = [] # Stores bid user IDs
+
+    # Gets all the bids on the listing
+    all_bids = Bid.objects.filter(listing_id = listing_id)
+    
+    for user_bid in all_bids:
+        bids_list.append(int(user_bid.bid))
+        bid_user.append(int(user_bid.user_id))
+    highest_bid = max(bids_list) # Gets the highest bid
+    if bid is not False:
+        try:
+            if int(listing_bid) > int(bid) or int(highest_bid) >= int(bid):
+                bid_success = 0
+            else:
+                if request.user.id in bid_user:
+                    c_bid = Bid.objects.get(user_id=request.user.id)
+                    c_bid.bid = bid
+                    c_bid.save()
+                else:
+                    Bid(listing_id = listing_id,
+                        bid = bid,
+                        user_id = request.user.id,
+                        ).save()
+        
+                    # If a users bid is approved, automatically adds the listing to their watchlist
+                    Watchlist(title=listing.title,
+                            description=listing.description,
+                            bid=listing.bid,
+                            image=listing.image,
+                            time=listing.time,
+                            listing_id=listing.id,
+                            user_id= request.user.id,
+                            ).save()
+
+                    print(int(bid))
+                    bid_success = 1
+        except:
+            bid_success = 2
+    else:
+        bid_success = ""
