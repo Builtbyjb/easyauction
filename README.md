@@ -1,1 +1,1 @@
-# easyauction
+# EasyAuction
