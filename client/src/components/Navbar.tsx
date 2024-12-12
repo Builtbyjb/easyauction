@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { CATEGORIES } from "@/lib/constants";
 import { logOut } from "@/lib/utils";
+import { Button } from "./ui/button";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -129,12 +130,9 @@ export default function Navbar() {
                   >
                     Watchlists
                   </a>
-                  <a
-                    className="px-3 py-2 rounded-md text-base font-medium bg-red-500 hover:bg-red-700"
-                    onClick={logOut}
-                  >
+                  <Button variant="destructive" onClick={logOut}>
                     Logout
-                  </a>
+                  </Button>
                 </>
               ) : (
                 <>
@@ -226,12 +224,13 @@ export default function Navbar() {
                 >
                   Watchlists
                 </a>
-                <a
-                  className="block px-3 py-2 rounded-md text-base font-medium bg-red-500 hover:bg-red-700"
+                <Button
+                  className="w-full"
+                  variant="destructive"
                   onClick={logOut}
                 >
                   Logout
-                </a>
+                </Button>
               </>
             ) : (
               <>

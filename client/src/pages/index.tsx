@@ -51,7 +51,7 @@ export default function Index() {
               description={listing.description}
               category={listing.category}
               time={listing.time}
-              creator={listing.category}
+              creator={listing.creator}
               key={uuidv4()}
             />
           ))}

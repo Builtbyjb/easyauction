@@ -1,6 +1,6 @@
 import { useParams } from "react-router";
 // import { Clock, DollarSign, User, Tag, Calendar } from "lucide-react";
-import { Tag } from "lucide-react";
+import { DollarSign, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -24,13 +24,13 @@ import api from "@/lib/api";
 import { URL_FIX } from "@/lib/constants";
 // import { v4 as uuidv4 } from "uuid";
 import LoadingPage from "@/components/LoadingPage";
-import { logOut } from "@/lib/utils";
 import { IMAGE_URL } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import BidEnd from "@/components/BidEnd";
 
 interface Listing {
   id: string;
@@ -66,8 +66,14 @@ export default function Listing() {
   const [isActivating, setIsActivating] = useState<boolean>(false);
   const [isAdding, setIsAdding] = useState<boolean>(false);
   const [isRemoving, setIsRemoving] = useState<boolean>(false);
-  const [isActive, setActive] = useState<boolean>(true);
+  const [isActive, setIsActive] = useState<boolean>(true); // is Listing Active or deactivated
   const [inWatchlist, setInWatchlist] = useState<boolean>(false);
+  const [auctionWinner, setAuctionWinner] = useState<string>("");
+  const [thereIsAuctionWinner, setThereIsAuctionWinner] =
+    useState<boolean>(false);
+  const [highestBid, setHighestBid] = useState<string>("");
+  const [isCreator, setIsCreator] = useState<boolean>(false);
+  const [isAuctionWinner, setIsAuctionWinner] = useState<boolean>(false);
 
   // Gets id from the url
   const { id } = useParams<{ id: string }>();
@@ -85,6 +91,17 @@ export default function Listing() {
     },
   });
 
+  const clearBidField = () => {
+    bidForm.reset({
+      bid: 0,
+    });
+  };
+
+  const clearCommentField = () => {
+    commentForm.reset({
+      comment: "",
+    });
+  };
   async function onBidSubmit(values: z.infer<typeof bidFormSchema>) {
     setIsBidding(true);
     const data = {
@@ -93,17 +110,18 @@ export default function Listing() {
     };
     try {
       const response = await api.post(`${URL_FIX}/bid`, data);
-      if (response.status === 401) {
-        logOut();
-      }
 
-      if (response.data.success) {
+      if (response.status === 202) {
         alert(response.data.success);
+        setHighestBid(response.data.highest_bid);
+        clearBidField();
       } else {
+        alert(response.data.error);
         console.error(response);
       }
     } catch (error) {
-      console.error(error);
+      console.log(error);
+      alert(error.response.data.error);
     } finally {
       setIsBidding(false);
     }
@@ -117,10 +135,10 @@ export default function Listing() {
     };
     try {
       const response = await api.post(`${URL_FIX}/comment`, data);
-      if (response.status === 401) {
-        logOut();
-      } else if (response.data.success) {
+
+      if (response.data.success) {
         alert(response.data.success);
+        clearCommentField();
       }
     } catch (error) {
       console.error(error);
@@ -131,13 +149,12 @@ export default function Listing() {
 
   async function addToWatchlist() {
     setIsAdding(true);
-    const data = { add_to_watchlist: id };
+    const data = { listing_id: id };
     try {
       const response = await api.post(`${URL_FIX}/watchlists`, data);
-      if (response.status === 401) {
-        logOut();
-      } else if (response.data.success) {
-        alert(response.data.success);
+
+      if (response.status === 200) {
+        setInWatchlist(true);
       }
     } catch (error) {
       console.error(error);
@@ -148,13 +165,11 @@ export default function Listing() {
 
   async function removeFromWatchlist() {
     setIsRemoving(true);
-    const data = { add_to_watchlist: id };
     try {
-      const response = await api.post(`${URL_FIX}/watchlists`, data);
-      if (response.status === 401) {
-        logOut();
-      } else if (response.data.success) {
-        alert(response.data.success);
+      const response = await api.delete(`${URL_FIX}/watchlists/${id}`);
+
+      if (response.status === 200) {
+        setInWatchlist(false);
       }
     } catch (error) {
       console.error(error);
@@ -168,10 +183,15 @@ export default function Listing() {
     const data = { is_active: false };
     try {
       const response = await api.post(`${URL_FIX}/listing/${id}`, data);
-      if (response.status === 401) {
-        logOut();
-      } else if (response.data.success) {
-        alert(response.data.success);
+
+      if (response.status === 200) {
+        setIsActive(false);
+
+        if (response.data.auction_winner) {
+          setAuctionWinner(response.data.auction_winner);
+          setThereIsAuctionWinner(response.data.there_is_auction_winner);
+          setHighestBid(response.data.highest_bid);
+        }
       }
     } catch (error) {
       console.error(error);
@@ -185,10 +205,9 @@ export default function Listing() {
     const data = { is_active: true };
     try {
       const response = await api.post(`${URL_FIX}/listing/${id}`, data);
-      if (response.status === 401) {
-        logOut();
-      } else if (response.data.success) {
-        alert(response.data.success);
+
+      if (response.status === 200) {
+        setIsActive(true);
       }
     } catch (error) {
       console.error(error);
@@ -201,12 +220,14 @@ export default function Listing() {
     const getListing = async () => {
       try {
         const response = await api.get(`${URL_FIX}/listing/${id}`);
-        if (response.status === 401) {
-          logOut();
-        } else if (response.status === 200) {
+
+        if (response.status === 200) {
           setListing(response.data.listing);
-          setActive(response.data.listing.is_active);
+          setHighestBid(response.data.listing.highest_bid);
+          setIsActive(response.data.listing.is_active);
           setInWatchlist(response.data.in_watchlist);
+          setIsAuctionWinner(response.data.is_auction_winner);
+          setIsCreator(response.data.is_creator);
         }
       } catch (error) {
         console.error(error);
@@ -225,21 +246,34 @@ export default function Listing() {
     <>
       <Card className="overflow-hidden">
         <div className="flex justify-between m-4">
-          {isActive ? (
-            <Button
-              variant="destructive"
-              onClick={() => handleDeactivate()}
-              disabled={isDeactivating}
-            >
-              {isDeactivating ? "Deactivating" : "Deactivate"}
-            </Button>
+          {isCreator ? (
+            <div>
+              {isActive ? (
+                <Button
+                  variant="destructive"
+                  onClick={() => handleDeactivate()}
+                  disabled={isDeactivating}
+                >
+                  {isDeactivating ? "Deactivating" : "Deactivate"}
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => handleActivate()}
+                  disabled={isActivating}
+                >
+                  {isActivating ? "Activating" : "Activate"}
+                </Button>
+              )}
+            </div>
           ) : (
-            <Button onClick={() => handleActivate()} disabled={isActivating}>
-              {isActivating ? "Activating" : "Activate"}
-            </Button>
+            <></>
           )}
           {inWatchlist ? (
-            <Button onClick={() => removeFromWatchlist()} disabled={isRemoving}>
+            <Button
+              variant="destructive"
+              onClick={() => removeFromWatchlist()}
+              disabled={isRemoving}
+            >
               {isRemoving ? "Removing from watchlist" : "Remove from watchlist"}
             </Button>
           ) : (
@@ -248,6 +282,39 @@ export default function Listing() {
             </Button>
           )}
         </div>
+        {!isActive && thereIsAuctionWinner && isCreator ? (
+          <BidEnd auction_winner={auctionWinner} highest_bid={highestBid} />
+        ) : (
+          <></>
+        )}
+        {!isActive ? (
+          <div className="m-4">
+            <h3 className="text-lg font-semibold mb-2 text-red-600">
+              This listing has been deactivated
+            </h3>
+            {isAuctionWinner ? (
+              <>
+                <div>
+                  <p className="text-gray-600">
+                    Congratutions! You are the winner of this auction. Click the
+                    Pay button to proceed to the next step
+                  </p>
+                  <Button
+                    onClick={() => {
+                      console.log("Processing Payment");
+                    }}
+                  >
+                    Pay
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <></>
+            )}
+          </div>
+        ) : (
+          <></>
+        )}
         <CardHeader>
           <CardTitle className="text-2xl md:text-3xl">
             {listing.title}
@@ -284,13 +351,19 @@ export default function Listing() {
                 <p className="text-gray-600">{listing.description}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                {/* <div className="flex items-center">
+                <div className="flex items-center">
                   <DollarSign className="mr-2 h-5 w-5 text-gray-500" />
                   <div>
                     <p className="text-sm text-gray-500">Current Bid</p>
-                    <p className="font-semibold">${listing.currentBid}</p>
+                    {highestBid.length > 0 ? (
+                      <p className="font-semibold">${highestBid}</p>
+                    ) : (
+                      <p className="text-sm font-semibold text-gray-700">
+                        No bids yet
+                      </p>
+                    )}
                   </div>
-                </div> */}
+                </div>
                 <div className="flex items-center">
                   <Tag className="mr-2 h-5 w-5 text-gray-500" />
                   <div>
@@ -314,76 +387,89 @@ export default function Listing() {
                   </p>
                 </div>
               </div>
-              <div className="w-full md:w-1/2 lg:w-1/2">
-                <h3 className="text-lg font-semibold mb-2 mt-4">Bid</h3>
-                <p className="font-semibold">${listing.highest_bid}</p>
-                <Form {...bidForm}>
-                  <form
-                    onSubmit={bidForm.handleSubmit(onBidSubmit)}
-                    className="space-y-8"
-                  >
-                    <FormField
-                      control={bidForm.control}
-                      name="bid"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input
-                              data-clear
-                              placeholder="0.00"
-                              type="number"
-                              step="0.01"
-                              min={listing.price}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" disabled={isBidding}>
-                      {isBidding ? "Place a bid " : "Placing bid"}
-                    </Button>
-                  </form>
-                </Form>
-              </div>
+              {isActive ? (
+                <div className="w-full md:w-1/2 lg:w-1/2">
+                  {!isCreator ? (
+                    <>
+                      <h3 className="text-lg font-semibold mb-2 mt-4">Bid</h3>
+                      <Form {...bidForm}>
+                        <form
+                          onSubmit={bidForm.handleSubmit(onBidSubmit)}
+                          className="space-y-8"
+                        >
+                          <FormField
+                            control={bidForm.control}
+                            name="bid"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Input
+                                    data-clear
+                                    placeholder="0.00"
+                                    type="number"
+                                    step="0.01"
+                                    min={listing.price}
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <Button type="submit" disabled={isBidding}>
+                            {isBidding ? "Place a bid " : "Placing bid"}
+                          </Button>
+                        </form>
+                      </Form>
+                    </>
+                  ) : (
+                    <></>
+                  )}
+                </div>
+              ) : (
+                <></>
+              )}
             </div>
           </div>
         </CardContent>
         <CardFooter>
-          <div className="w-full md:w-1/2 lg:w-1/2">
-            <h3 className="text-lg font-semibold mb-2 mt-4">Comments</h3>
-            {/* Display comments */}
-            <div className="mb-4"></div>
-            {/* Comment input */}
-            <Form {...commentForm}>
-              <form
-                onSubmit={commentForm.handleSubmit(onCommentSubmit)}
-                className="space-y-8"
-              >
-                <FormField
-                  control={commentForm.control}
-                  name="comment"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Textarea
-                          data-clear
-                          placeholder="Write a comment"
-                          className="resize-none"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" disabled={isCommenting}>
-                  {isCommenting ? "Commenting" : "Comment"}
-                </Button>
-              </form>
-            </Form>
-          </div>
+          {isActive ? (
+            <div className="w-full md:w-1/2 lg:w-1/2">
+              <h3 className="text-lg font-semibold mb-2 mt-4">Comments</h3>
+              {/* Display comments */}
+              <div className="mb-4"></div>
+              {/* Comment input */}
+              <Form {...commentForm}>
+                <form
+                  onSubmit={commentForm.handleSubmit(onCommentSubmit)}
+                  className="space-y-8"
+                >
+                  <FormField
+                    control={commentForm.control}
+                    name="comment"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Textarea
+                            data-clear
+                            placeholder="Write a comment"
+                            className="resize-none"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit" disabled={isCommenting}>
+                    {isCommenting ? "Commenting" : "Comment"}
+                  </Button>
+                </form>
+              </Form>
+            </div>
+          ) : (
+            <></>
+          )}
         </CardFooter>
       </Card>
     </>

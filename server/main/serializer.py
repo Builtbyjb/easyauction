@@ -1,4 +1,4 @@
-from .models import User, Listing, Watchlist, Comment
+from .models import User, Listing, Watchlist, Comment, Bid
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
@@ -74,3 +74,12 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = ["listing_id","comment"]
+
+class BidSerializer(serializers.ModelSerializer):
+    listing_id = serializers.IntegerField(required=False)
+    user_id = serializers.IntegerField(required=False)
+    bid = serializers.CharField(required=False)
+
+    class Meta:
+        model = Bid
+        fields = ["listing_id","bid", "user_id"]

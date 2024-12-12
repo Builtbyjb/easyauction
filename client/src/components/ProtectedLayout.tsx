@@ -2,9 +2,9 @@ import { ReactNode, useEffect, useState } from "react";
 import { Navigate } from "react-router";
 import { jwtDecode } from "jwt-decode";
 import Navbar from "./Navbar";
-import api from "@/lib/api";
 import LoadingPage from "./LoadingPage";
 import Footer from "./Footer";
+import { refreshToken } from "@/lib/utils";
 
 interface Props {
   children: ReactNode;
@@ -12,25 +12,6 @@ interface Props {
 
 export default function ProtectedLayout({ children }: Props) {
   const [isAuth, setIsAuth] = useState<boolean | null>(null);
-
-  const refreshToken = async () => {
-    const refreshToken = localStorage.getItem("REFRESH_TOKEN");
-    try {
-      const response = await api.post("/api/token/refresh/", {
-        refresh: refreshToken,
-      });
-
-      if (response.status === 200) {
-        localStorage.setItem("ACCESS_TOKEN", response.data.access);
-        setIsAuth(true);
-      } else {
-        setIsAuth(false);
-      }
-    } catch (error) {
-      console.error("Refresh token expired", error);
-      setIsAuth(false);
-    }
-  };
 
   useEffect(() => {
     const auth = async () => {
@@ -41,7 +22,8 @@ export default function ProtectedLayout({ children }: Props) {
         const now = Date.now() / 1000; //Gets date in secs instead of ms
 
         if (tokenExpiration && tokenExpiration < now) {
-          await refreshToken();
+          const isRefreshed = await refreshToken();
+          setIsAuth(isRefreshed.value);
         } else {
           setIsAuth(true);
         }

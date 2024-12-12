@@ -11,6 +11,8 @@ class User(AbstractUser):
 class Listing(models.Model):
     creator_id = models.IntegerField()
     creator = models.CharField(max_length=50, null=True)
+    winner_id = models.IntegerField(null=True)
+    winner = models.CharField(max_length=50, null=True)
     title = models.CharField(max_length=12, null=True)
     image = models.ImageField(upload_to="", null=True)
     description = models.CharField(max_length=1000, null=True)
