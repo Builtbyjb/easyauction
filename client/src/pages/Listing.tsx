@@ -228,6 +228,7 @@ export default function Listing() {
           setInWatchlist(response.data.in_watchlist);
           setIsAuctionWinner(response.data.is_auction_winner);
           setIsCreator(response.data.is_creator);
+          setThereIsAuctionWinner(response.data.there_is_auction_winner);
         }
       } catch (error) {
         console.error(error);
@@ -282,11 +283,6 @@ export default function Listing() {
             </Button>
           )}
         </div>
-        {!isActive && thereIsAuctionWinner && isCreator ? (
-          <BidEnd auction_winner={auctionWinner} highest_bid={highestBid} />
-        ) : (
-          <></>
-        )}
         {!isActive ? (
           <div className="m-4">
             <h3 className="text-lg font-semibold mb-2 text-red-600">
@@ -295,7 +291,7 @@ export default function Listing() {
             {isAuctionWinner ? (
               <>
                 <div>
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 mb-4">
                     Congratutions! You are the winner of this auction. Click the
                     Pay button to proceed to the next step
                   </p>
@@ -312,6 +308,11 @@ export default function Listing() {
               <></>
             )}
           </div>
+        ) : (
+          <></>
+        )}
+        {!isActive && thereIsAuctionWinner && isCreator ? (
+          <BidEnd auction_winner={auctionWinner} highest_bid={highestBid} />
         ) : (
           <></>
         )}
@@ -355,7 +356,7 @@ export default function Listing() {
                   <DollarSign className="mr-2 h-5 w-5 text-gray-500" />
                   <div>
                     <p className="text-sm text-gray-500">Current Bid</p>
-                    {highestBid.length > 0 ? (
+                    {highestBid && highestBid.length > 0 ? (
                       <p className="font-semibold">${highestBid}</p>
                     ) : (
                       <p className="text-sm font-semibold text-gray-700">

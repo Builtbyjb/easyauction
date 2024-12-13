@@ -103,7 +103,7 @@ export default function CreateListingPage() {
     try {
       const response = await api.post(`${URL_FIX}/create_listing`, formData);
 
-      if (response.status === 200) {
+      if (response.status === 201) {
         clearAllFields();
         clearImageInput();
         alert(response.data.success);

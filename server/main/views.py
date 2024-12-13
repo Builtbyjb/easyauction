@@ -244,25 +244,12 @@ def watchlists(request, listing_id=None):
 @permission_classes([IsAuthenticated])
 def listing(request, listing_id):
 
-    watchlist_id = [] # Stores listing ids
-
-    listing = Listing.objects.get(id=listing_id)
-    watchlists = Watchlist.objects.filter(user_id = request.user.id)
-
-    for watchlist in watchlists:
-        watchlist_id.append(watchlist.listing_id)
-
-    # Checks if the listing has been added to the watchlist
-    if listing_id in watchlist_id:
-        in_watchlist = True
-    else:
-        in_watchlist = False
-
     if request.method == "POST":
         serializer = ListingSerializer(data=request.data)
         if serializer.is_valid():
+            listing = Listing.objects.get(id=listing_id)
             listing.is_active = serializer.validated_data['is_active']
-            listing.save()
+
             if serializer.validated_data['is_active'] == False:
 
                 # Set initial values
@@ -271,6 +258,8 @@ def listing(request, listing_id):
                 try:
                     user_with_highest_bid = Bid.objects.get(bid=listing.highest_bid) 
                     user = User.objects.get(id=user_with_highest_bid.user_id)
+                    listing.winner = user.username
+                    listing.winner_id = user.id
                     there_is_auction_winner = True
 
                     return Response(
@@ -287,7 +276,12 @@ def listing(request, listing_id):
                         {'success': 'Listing deactivated'},
                         status=status.HTTP_200_OK
                     )
+                finally:
+                    listing.save()
             else:
+                listing.winner = None
+                listing.winner_id = None
+                listing.save()
                 return Response(
                     {'success': 'Listing activated'},
                     status=status.HTTP_200_OK
@@ -303,12 +297,29 @@ def listing(request, listing_id):
         # Sets initial values
         is_creator = False
         is_auction_winner = False
+        there_is_auction_winner = False
+        in_watchlist = False
+
+        watchlist_id = [] # Stores listing ids
+
+        listing = Listing.objects.get(id=listing_id)
+        watchlists = Watchlist.objects.filter(user_id = request.user.id)
+
+        for watchlist in watchlists:
+            watchlist_id.append(watchlist.listing_id)
+
+        # Checks if the listing has been added to the watchlist
+        if listing_id in watchlist_id:
+            in_watchlist = True
 
         if listing.creator_id == request.user.id:
             is_creator = True
 
         if listing.winner == request.user.username:
             is_auction_winner = True
+
+        if not listing.is_active and listing.winner is not None:
+            there_is_auction_winner = True
 
         comments = Comment.objects.filter(listing_id= listing_id)
         serialized_listing = ListingSerializer(listing, many=False).data
@@ -319,6 +330,7 @@ def listing(request, listing_id):
                 "in_watchlist": in_watchlist,
                 "is_creator": is_creator,
                 "is_auction_winner": is_auction_winner,
+                "there_is_auction_winner": there_is_auction_winner,
                 "comments": comments,
             },
             status=status.HTTP_200_OK
