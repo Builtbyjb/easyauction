@@ -19,19 +19,11 @@ from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from django.db import transaction
 
 
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def index(request):
-    return render(request, "index.html")
-
-
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
-
     serializer = UserLoginSerializer(data=request.data)
     if serializer.is_valid():
-
         try:
             user = User.objects.get(email=serializer.validated_data['email'])
 
@@ -68,18 +60,14 @@ def login_view(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register(request):
-
     serializer = UserRegisterSerializer(data=request.data)
-
     if serializer.is_valid():
-
         try:
             user = User.objects.create_user(
                 username=serializer.validated_data['username'],
                 email=serializer.validated_data['email'],
                 password=serializer.validated_data['password']
             )
-        
             access = AccessToken.for_user(user)
             refresh = RefreshToken.for_user(user)
             user.save()
@@ -96,7 +84,6 @@ def register(request):
                 {"error": "Username already taken"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
     else:
         error = ""
         try:
@@ -120,11 +107,9 @@ def register(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_listing(request):
-
     serializer = ListingSerializer(data=request.data)
     if serializer.is_valid():
         time = datetime.now()
-
         new_listing = Listing(
             title=serializer.validated_data['title'], 
             creator=request.user.username, 
@@ -135,9 +120,7 @@ def create_listing(request):
             time=time.strftime("%B %d, %Y %I:%M %p"),
             creator_id=request.user.id,
         )
-
         new_listing.save()
-
         return Response(
             {"success": "Listing added successfully"},
             status=status.HTTP_201_CREATED
@@ -154,7 +137,6 @@ def create_listing(request):
 def listings(request):
     listings = Listing.objects.filter(is_active=True).order_by("-id")
     serialized_listings = ListingSerializer(listings, many=True).data
-
     return Response(
         {"listings": serialized_listings},
         status=status.HTTP_200_OK
@@ -166,7 +148,6 @@ def listings(request):
 def my_listings(request):
     listings = Listing.objects.filter(creator_id=request.user.id).order_by("-id")
     serialized_listings = ListingSerializer(listings, many=True).data
-
     return Response(
         {"listings": serialized_listings},
         status=status.HTTP_200_OK
@@ -180,9 +161,7 @@ def category(request, category_type):
                     .filter(is_active=True) \
                     .filter(category=category_type) \
                     .order_by("-id")
-
     serialized_listings = ListingSerializer(listings, many=True).data
-
     return Response(
         {"listings": serialized_listings},
         status=status.HTTP_200_OK
@@ -194,15 +173,12 @@ def category(request, category_type):
 def watchlists(request, listing_id=None):
     if request.method == "POST":
         serializer = WatchlistSerializer(data=request.data)
-
         if serializer.is_valid():
             watchlist = Watchlist(
                 listing_id=serializer.validated_data["listing_id"],
                 user_id=request.user.id,
             )
-
             watchlist.save()
-
             return Response(
                 {'success':'Listing added to watchlist'},
                 status=status.HTTP_200_OK
@@ -213,7 +189,6 @@ def watchlists(request, listing_id=None):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     elif request.method == "DELETE":
-        
         if listing_id:
             # Removes listing from watchlist
             Watchlist.objects.get(listing_id=listing_id).delete()
@@ -223,7 +198,6 @@ def watchlists(request, listing_id=None):
                 {"success": "Listing removed from watchlist"},
                 status=status.HTTP_200_OK
             )
-
     else:
         listing_ids = []
         watchlists = Watchlist.objects.filter(user_id=request.user.id)
@@ -232,7 +206,6 @@ def watchlists(request, listing_id=None):
             listing_ids.append(watchlist.listing_id)
 
         listings = Listing.objects.filter(id__in=listing_ids)
-
         serialized_listings = ListingSerializer(listings, many=True).data
         return Response(
             {"listings": serialized_listings},
@@ -243,7 +216,6 @@ def watchlists(request, listing_id=None):
 @api_view(['GET','POST'])
 @permission_classes([IsAuthenticated])
 def listing(request, listing_id):
-
     if request.method == "POST":
         serializer = ListingSerializer(data=request.data)
         if serializer.is_valid():
@@ -261,7 +233,6 @@ def listing(request, listing_id):
                     listing.winner = user.username
                     listing.winner_id = user.id
                     there_is_auction_winner = True
-
                     return Response(
                         {
                             'success': 'Listing deactivated',
@@ -286,13 +257,11 @@ def listing(request, listing_id):
                     {'success': 'Listing activated'},
                     status=status.HTTP_200_OK
                 )
-        
         else:
             return Response(
                 serializer.errors,
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
     else:
         # Sets initial values
         is_creator = False
@@ -321,9 +290,9 @@ def listing(request, listing_id):
         if not listing.is_active and listing.winner is not None:
             there_is_auction_winner = True
 
-        comments = Comment.objects.filter(listing_id= listing_id)
         serialized_listing = ListingSerializer(listing, many=False).data
-
+        comments = Comment.objects.filter(listing_id=listing_id).order_by("-id")
+        serialized_comments = CommentSerializer(comments, many=True).data
         return Response(
             {
                 "listing": serialized_listing,
@@ -331,7 +300,7 @@ def listing(request, listing_id):
                 "is_creator": is_creator,
                 "is_auction_winner": is_auction_winner,
                 "there_is_auction_winner": there_is_auction_winner,
-                "comments": comments,
+                "comments": serialized_comments,
             },
             status=status.HTTP_200_OK
         )
@@ -345,15 +314,19 @@ def comment(request):
         user = User.objects.get(id=request.user.id)
         time = datetime.now()
         comment = Comment(
-            user_id = request.user.id,
-            user_name = user.username,
-            comment = comment,
-            listing_id = listing.id,
-            time= time.strftime("%B %d, %Y %I:%M %p")
+            user_id=request.user.id,
+            username=user.username,
+            comment=serializer.validated_data['comment'],
+            listing_id=serializer.validated_data['listing_id'],
+            time=time.strftime("%B %d, %Y %I:%M %p")
         )
         comment.save()
+        serialized_comment = CommentSerializer(comment, many=False).data
         return Response(
-            {"success": "Comment added"},
+            {
+                "success": "Comment added",
+                "comment": serialized_comment,
+            },
             status=status.HTTP_200_OK
         )
     else:

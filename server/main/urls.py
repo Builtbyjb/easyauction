@@ -1,6 +1,7 @@
-from django.urls import path
+from django.urls import path, re_path
 from . import views
 from django.conf import settings
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.conf.urls.static import static
 
 urlpatterns = [
@@ -15,4 +16,4 @@ urlpatterns = [
     path("bid", views.bid, name="bid"),
     path("my_listings", views.my_listings, name="my_listings"),
     path("categories/<str:category_type>", views.category, name="category"),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+] + staticfiles_urlpatterns()+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

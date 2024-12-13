@@ -70,10 +70,12 @@ class WatchlistSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     listing_id = serializers.IntegerField(required=False)
     comment = serializers.CharField(required=False)
+    time = serializers.CharField(required=False)
+    username = serializers.CharField(required=False)
 
     class Meta:
         model = Comment
-        fields = ["listing_id","comment"]
+        fields = ["listing_id","comment", "time", "username"]
 
 class BidSerializer(serializers.ModelSerializer):
     listing_id = serializers.IntegerField(required=False)

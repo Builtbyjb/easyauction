@@ -8,4 +8,6 @@ migrate:
 	cd server && python manage.py makemigrations main && python manage.py migrate
 
 deploy:
-	./deploy.sh
+	cd client && npm run build
+	cd server && rm -rf staticfiles
+	cd server && python manage.py collectstatic

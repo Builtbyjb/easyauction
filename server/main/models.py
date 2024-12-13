@@ -42,10 +42,10 @@ class Bid(models.Model):
 
 class Comment(models.Model):
     user_id = models.IntegerField()
-    user_name = models.CharField(max_length=100)
+    username = models.CharField(max_length=100)
     listing_id = models.IntegerField()
     comment = models.CharField(max_length=1000, null=True)
     time = models.CharField(max_length=50, null=True)
 
     def __str__(self):
-        return f"Listing ID: {self.listing_id}, Username: {self.user_name}, User ID: {self.user_id}"
+        return f"Listing ID: {self.listing_id}, Username: {self.username}, User ID: {self.user_id}"

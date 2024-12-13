@@ -31,6 +31,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import BidEnd from "@/components/BidEnd";
+import { v4 as uuidv4 } from "uuid";
+import Comment from "@/components/Comment";
+import { AxiosError } from "axios";
 
 interface Listing {
   id: string;
@@ -42,6 +45,12 @@ interface Listing {
   image: string;
   time: string;
   highest_bid: string;
+}
+
+interface CommentProps {
+  username: string;
+  comment: string;
+  time: string;
 }
 
 const AVATAR = "/placeholder.svg?height=32&width=32";
@@ -74,6 +83,7 @@ export default function Listing() {
   const [highestBid, setHighestBid] = useState<string>("");
   const [isCreator, setIsCreator] = useState<boolean>(false);
   const [isAuctionWinner, setIsAuctionWinner] = useState<boolean>(false);
+  const [comments, setComments] = useState<CommentProps[]>([]);
 
   // Gets id from the url
   const { id } = useParams<{ id: string }>();
@@ -119,9 +129,14 @@ export default function Listing() {
         alert(response.data.error);
         console.error(response);
       }
-    } catch (error) {
-      console.log(error);
-      alert(error.response.data.error);
+    } catch (error: unknown) {
+      if (error instanceof AxiosError) {
+        if (error.response !== undefined) {
+          alert(error.response.data.error);
+        }
+      } else {
+        console.log(error);
+      }
     } finally {
       setIsBidding(false);
     }
@@ -136,8 +151,15 @@ export default function Listing() {
     try {
       const response = await api.post(`${URL_FIX}/comment`, data);
 
-      if (response.data.success) {
-        alert(response.data.success);
+      if (response.status === 200) {
+        if (comments) {
+          setComments((prevComments) => [
+            response.data.comment,
+            ...prevComments,
+          ]);
+        } else {
+          setComments(response.data.comment);
+        }
         clearCommentField();
       }
     } catch (error) {
@@ -229,6 +251,7 @@ export default function Listing() {
           setIsAuctionWinner(response.data.is_auction_winner);
           setIsCreator(response.data.is_creator);
           setThereIsAuctionWinner(response.data.there_is_auction_winner);
+          setComments(response.data.comments);
         }
       } catch (error) {
         console.error(error);
@@ -285,9 +308,9 @@ export default function Listing() {
         </div>
         {!isActive ? (
           <div className="m-4">
-            <h3 className="text-lg font-semibold mb-2 text-red-600">
+            <p className="text-sm mb-2 text-red-600">
               This listing has been deactivated
-            </h3>
+            </p>
             {isAuctionWinner ? (
               <>
                 <div>
@@ -434,12 +457,30 @@ export default function Listing() {
           </div>
         </CardContent>
         <CardFooter>
-          {isActive ? (
-            <div className="w-full md:w-1/2 lg:w-1/2">
-              <h3 className="text-lg font-semibold mb-2 mt-4">Comments</h3>
-              {/* Display comments */}
-              <div className="mb-4"></div>
-              {/* Comment input */}
+          <div className="w-full md:w-1/2 lg:w-1/2">
+            <h3 className="text-lg font-semibold mb-2 mt-4">Comments</h3>
+            {/* Display comments */}
+            {comments && comments.length > 0 ? (
+              <div className="mb-4">
+                {comments.map((comment: CommentProps) => (
+                  <Comment
+                    key={uuidv4()}
+                    username={comment.username}
+                    comment={comment.comment}
+                    time={comment.time}
+                  />
+                ))}
+              </div>
+            ) : (
+              <>
+                <p className="text-gray-500 text-sm mb-4">
+                  No comments to show
+                </p>
+              </>
+            )}
+
+            {/* Comment input */}
+            {isActive ? (
               <Form {...commentForm}>
                 <form
                   onSubmit={commentForm.handleSubmit(onCommentSubmit)}
@@ -467,10 +508,10 @@ export default function Listing() {
                   </Button>
                 </form>
               </Form>
-            </div>
-          ) : (
-            <></>
-          )}
+            ) : (
+              <></>
+            )}
+          </div>
         </CardFooter>
       </Card>
     </>

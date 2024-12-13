@@ -94,7 +94,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'uploads')
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': ["staticfiles"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -162,7 +162,8 @@ STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 STATICFILES_DIRS = [
-    BASE_DIR / "uploads",
+    os.path.join(BASE_DIR,"uploads"),
+    os.path.join(BASE_DIR,"../client/static"),
 ]
 
 # Default primary key field type
