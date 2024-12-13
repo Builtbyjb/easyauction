@@ -22,12 +22,14 @@ export default function Comment({ username, comment, time }: CommentProps) {
     <div className="flex space-x-4 p-4 bg-white rounded-lg shadow">
       <Avatar className="w-10 h-10">
         <AvatarImage src={AVATAR} alt={username} />
-        <AvatarFallback>{username.charAt(0)}</AvatarFallback>
+        <AvatarFallback>{username.charAt(0).toUpperCase()}</AvatarFallback>
       </Avatar>
       <div className="flex-1 space-y-2">
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="font-semibold">{username}</h4>
+            <h4 className="text-sm font-semibold">
+              {username.charAt(0).toUpperCase() + username.slice(1)}
+            </h4>
             <p className="text-sm text-gray-500">{time}</p>
           </div>
           <DropdownMenu>

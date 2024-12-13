@@ -17,7 +17,10 @@ export default function BidEnd({ auction_winner, highest_bid }: Props) {
   return (
     <div className="m-4">
       <p className="mb-4">
-        The current bid for this listings is {highest_bid} by {auction_winner}
+        The current bid for this listings is <strong>${highest_bid}</strong> by{" "}
+        <strong>
+          {auction_winner.charAt(0).toUpperCase() + auction_winner.slice(1)}
+        </strong>
       </p>
       <div className="flex">
         <Button onClick={acceptBid} className="me-8">

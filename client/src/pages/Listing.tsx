@@ -308,7 +308,7 @@ export default function Listing() {
         </div>
         {!isActive ? (
           <div className="m-4">
-            <p className="text-sm mb-2 text-red-600">
+            <p className="mb-2 text-red-600">
               This listing has been deactivated
             </p>
             {isAuctionWinner ? (
