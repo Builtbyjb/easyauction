@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import api from "@/lib/api";
+import { Navigate } from "react-router";
 
 const formSchema = z.object({
   email: z.string().email({
@@ -59,6 +60,12 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
+  }
+
+  const token = localStorage.getItem("ACCESS_TOKEN");
+
+  if (token) {
+    return <Navigate to="/" />;
   }
 
   return (
